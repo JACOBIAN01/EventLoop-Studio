@@ -1,0 +1,41 @@
+{
+  "fileName": "sample.js",
+  "sourceCode": "console.log('start');\nconst greeting = 'hello event loop';\nsetTimeout(() => console.log('timeout'), 0);\nPromise.resolve().then(() => console.log('promise'));\nconsole.log('end');\n",
+  "steps": [
+    { "id": 0, "kind": "line", "line": 1, "label": "Evaluating line 1" },
+    { "id": 1, "kind": "push-stack", "line": 1, "label": "console.log" },
+    { "id": 2, "kind": "console-log", "line": 1, "label": "console.log", "detail": "start" },
+    { "id": 3, "kind": "pop-stack", "line": 1, "label": "console.log" },
+
+    { "id": 4, "kind": "line", "line": 2, "label": "Evaluating line 2" },
+    { "id": 5, "kind": "heap-set", "line": 2, "label": "greeting", "detail": "\"hello event loop\"" },
+
+    { "id": 6, "kind": "line", "line": 3, "label": "Evaluating line 3" },
+    { "id": 7, "kind": "push-stack", "line": 3, "label": "setTimeout" },
+    { "id": 8, "kind": "schedule-timer", "line": 3, "label": "() => console.log('timeout')", "detail": "delay: 0ms" },
+    { "id": 9, "kind": "pop-stack", "line": 3, "label": "setTimeout" },
+
+    { "id": 10, "kind": "line", "line": 4, "label": "Evaluating line 4" },
+    { "id": 11, "kind": "push-stack", "line": 4, "label": "Promise.resolve" },
+    { "id": 12, "kind": "pop-stack", "line": 4, "label": "Promise.resolve" },
+    { "id": 13, "kind": "push-stack", "line": 4, "label": ".then" },
+    { "id": 14, "kind": "schedule-microtask", "line": 4, "label": "() => console.log('promise')", "detail": ".then callback" },
+    { "id": 15, "kind": "pop-stack", "line": 4, "label": ".then" },
+
+    { "id": 16, "kind": "line", "line": 5, "label": "Evaluating line 5" },
+    { "id": 17, "kind": "push-stack", "line": 5, "label": "console.log" },
+    { "id": 18, "kind": "console-log", "line": 5, "label": "console.log", "detail": "end" },
+    { "id": 19, "kind": "pop-stack", "line": 5, "label": "console.log" },
+
+    { "id": 20, "kind": "run-microtask", "line": 4, "label": "() => console.log('promise')", "refId": 14 },
+    { "id": 21, "kind": "push-stack", "line": 4, "label": "(promise callback)", "refId": 14 },
+    { "id": 22, "kind": "console-log", "line": 4, "label": "console.log", "detail": "promise" },
+    { "id": 23, "kind": "pop-stack", "line": 4, "label": "(promise callback)" },
+
+    { "id": 24, "kind": "timer-ready", "line": 3, "label": "() => console.log('timeout')", "refId": 8 },
+    { "id": 25, "kind": "run-timer", "line": 3, "label": "() => console.log('timeout')", "refId": 8 },
+    { "id": 26, "kind": "push-stack", "line": 3, "label": "(timeout callback)", "refId": 8 },
+    { "id": 27, "kind": "console-log", "line": 3, "label": "console.log", "detail": "timeout" },
+    { "id": 28, "kind": "pop-stack", "line": 3, "label": "(timeout callback)" }
+  ]
+}
