@@ -1,0 +1,91 @@
+{
+  "name": "eventloop-studio",
+  "displayName": "EventLoop Studio",
+  "description": "Visualize how JavaScript's call stack, queues, and event loop actually execute your code.",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education",
+    "Visualization"
+  ],
+  "icon": "media/icon.png",
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "eventloop-studio.visualize",
+        "title": "Visualize Event Loop",
+        "category": "EventLoop Studio",
+        "icon": {
+          "light": "media/toolbar-light.png",
+          "dark": "media/toolbar-dark.png"
+        }
+      },
+      {
+        "command": "eventloop-studio.showAstSummary",
+        "title": "Show Parsed AST (JSON)",
+        "category": "EventLoop Studio"
+      },
+      {
+        "command": "eventloop-studio.helloDeveloper",
+        "title": "Hello Developer",
+        "category": "EventLoop Studio"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "eventloop-studio.visualize",
+          "when": "resourceLangId == javascript",
+          "group": "navigation"
+        }
+      ]
+    },
+    "problemMatchers": [
+      {
+        "name": "esbuild-watch",
+        "owner": "eventloop-studio",
+        "source": "esbuild",
+        "fileLocation": "absolute",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+): error: (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "message": 4
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[watch\\] build started$",
+          "endsPattern": "^\\[watch\\] build finished$"
+        }
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run typecheck && node esbuild.js",
+    "compile": "npm run typecheck && node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit -p ./ && tsc --noEmit -p ./webview-ui"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@types/node": "^20.11.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.28.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "acorn": "^8.18.0",
+    "acorn-walk": "^8.3.5",
+    "framer-motion": "^12.43.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  }
+}

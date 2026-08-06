@@ -1,0 +1,5 @@
+out
+node_modules
+*.vsix
+webview-ui/preview-bundle.*
+
