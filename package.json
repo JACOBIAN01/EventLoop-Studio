@@ -3,6 +3,27 @@
   "displayName": "EventLoop Studio",
   "description": "Visualize how JavaScript's call stack, queues, and event loop actually execute your code.",
   "version": "0.0.1",
+  "publisher": "YOUR_PUBLISHER_ID",
+  "author": "JACOBIAN01",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JACOBIAN01/EventLoop-Studio.git"
+  },
+  "bugs": {
+    "url": "https://github.com/JACOBIAN01/EventLoop-Studio/issues"
+  },
+  "homepage": "https://github.com/JACOBIAN01/EventLoop-Studio#readme",
+  "keywords": [
+    "javascript",
+    "event loop",
+    "call stack",
+    "async",
+    "promises",
+    "visualization",
+    "education",
+    "debugging"
+  ],
   "engines": {
     "vscode": "^1.85.0"
   },

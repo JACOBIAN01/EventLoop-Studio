@@ -1,0 +1,19 @@
+# Everything here is compiled/bundled into out/ by esbuild, so none of it is
+# needed at runtime in the packaged extension.
+src/**
+webview-ui/**
+node_modules/**
+
+# Build tooling and editor/config files, not needed by the packaged extension.
+.vscode/**
+esbuild.js
+tsconfig.json
+package-lock.json
+.gitignore
+.vscodeignore
+
+# Source maps are only useful for local debugging during development.
+out/**/*.map
+
+.DS_Store
+*.vsix

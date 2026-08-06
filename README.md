@@ -36,6 +36,7 @@
 - [Sample Scripts](#sample-scripts)
 - [Educational Value](#educational-value)
 - [Roadmap](#roadmap)
+- [Publishing Checklist](#publishing-checklist)
 
 ---
 
@@ -354,6 +355,37 @@ Planned or under consideration, not yet built:
 
 - [ ] Automated test suite covering the recorder's ordering guarantees
 - [ ] Performance pass for very large/long-running scripts
-- [ ] Marketplace publishing (icons and manifest metadata are already in place)
+- [x] Marketplace publishing prep (icons and manifest metadata are in place, see checklist below)
 - [ ] Multi-file / `import`-aware recording
 - [ ] Broader per-panel definitions and an expanded sample library
+
+---
+
+## Publishing Checklist
+
+Tracking progress toward an actual Marketplace release. Check items off as they're completed.
+
+**Build & polish**
+- [x] Core features complete (recorder, UI, animations, theming, narration, icons)
+- [x] Professional README with architecture diagrams
+- [x] Extension icon + toolbar icons (light/dark variants) finalized
+
+**Repository**
+- [x] Local git repository initialized, history organized into logical commits
+- [x] GitHub remote configured
+- [ ] Commits pushed to GitHub
+
+**Manifest & packaging**
+- [x] `package.json` metadata added (`repository`, `license`, `keywords`, `author`)
+- [x] `.vscodeignore` added to keep the packaged `.vsix` lean (excludes source, keeps only compiled `out/`)
+- [x] `LICENSE` file added
+- [x] `CHANGELOG.md` added
+- [ ] Replace the placeholder `"publisher"` value in `package.json` with your real registered publisher ID
+
+**Marketplace account**
+- [ ] Create a publisher on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage) (requires an Azure DevOps organization)
+- [ ] Generate a Personal Access Token with Marketplace publish scope
+
+**Final release steps**
+- [ ] `vsce package` locally and install the resulting `.vsix` via "Install from VSIX..." to sanity-check a clean build
+- [ ] `vsce publish` to go live on the Marketplace
