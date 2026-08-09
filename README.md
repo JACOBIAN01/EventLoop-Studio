@@ -172,17 +172,7 @@ A separate, simpler command that parses the active file and shows a flat JSON su
 
 ### The recording pipeline
 
-```mermaid
-flowchart LR
-    A["Active .js file<br/>(source code)"] --> B["AST Parser<br/>(acorn)"]
-    B --> C["Source Instrumentor<br/>(splices trace hooks)"]
-    C --> D["Sandboxed VM<br/>(Node vm module)"]
-    D --> E["Monkey-patched APIs<br/>setTimeout / Promise.then /<br/>queueMicrotask / console"]
-    D --> F["ExecutionStep[]<br/>(the recorded trace)"]
-    F -->|postMessage| G["Webview<br/>(React)"]
-    G --> H["computeStateAtStep<br/>(pure fold)"]
-    H --> I["Panels<br/>(Call Stack, Heap, Queues, ...)"]
-```
+![Recording pipeline: source file to AST parser to instrumentor to sandboxed VM to execution trace to webview to panels](media/diagrams/recording-pipeline.png)
 
 Concretely, five things happen when a file is recorded:
 
@@ -194,46 +184,13 @@ Concretely, five things happen when a file is recorded:
 
 ### Sequence: what happens when you click Visualize
 
-```mermaid
-sequenceDiagram
-    participant You
-    participant VSCode as VS Code Command
-    participant Ext as Extension Host
-    participant Sandbox as Recorder (vm sandbox)
-    participant Panel as Webview Panel
-    participant UI as React UI
-
-    You->>VSCode: Click "Visualize Event Loop"
-    VSCode->>Ext: activate eventloop-studio.visualize
-    Ext->>Ext: Read active editor's source text
-    Ext->>Panel: createOrShow()
-    Ext->>Sandbox: recordTrace(sourceCode, fileName)
-    Sandbox->>Sandbox: instrument() + run in vm context
-    Sandbox-->>Ext: Trace { steps: ExecutionStep[] }
-    Ext->>Panel: postTrace(trace)
-    Panel->>UI: postMessage({ type: "trace", payload })
-    UI->>UI: computeStateAtStep(steps, index) per panel
-    UI-->>You: Animated, interactive replay
-```
+![Sequence diagram: clicking Visualize Event Loop through to the animated replay](media/diagrams/visualize-sequence.png)
 
 ### The event loop's actual decision procedure
 
 This is the core rule the entire tool exists to teach: the same logic the **Event Loop panel** displays live:
 
-```mermaid
-flowchart TD
-    Start(["Engine is idle"]) --> CheckStack{"Is the Call Stack empty?"}
-    CheckStack -- No --> RunSync["Keep running<br/>current code"]
-    RunSync --> CheckStack
-    CheckStack -- Yes --> CheckMicro{"Any microtasks<br/>queued?"}
-    CheckMicro -- Yes --> RunMicro["Run ONE microtask<br/>(this may queue more)"]
-    RunMicro --> CheckStack
-    CheckMicro -- No --> CheckMacro{"Any macrotasks<br/>ready?"}
-    CheckMacro -- Yes --> RunMacro["Run ONE macrotask"]
-    RunMacro --> CheckStack
-    CheckMacro -- No --> Wait["Wait for the next<br/>timer/event"]
-    Wait --> CheckStack
-```
+![Event loop decision flowchart: call stack, then microtasks, then macrotasks, then wait](media/diagrams/event-loop-decision.png)
 
 The detail most people get wrong: after a microtask runs, the loop goes **back to checking the Call Stack and the Microtask Queue again**, not straight to the next macrotask. A microtask that queues another microtask keeps winning, every time, before any timer gets a turn. Every sample script in this project is built to make that visible.
 
