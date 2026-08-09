@@ -380,7 +380,7 @@ Tracking progress toward an actual Marketplace release. Check items off as they'
 - [x] `.vscodeignore` added to keep the packaged `.vsix` lean (excludes source, keeps only compiled `out/`)
 - [x] `LICENSE` file added
 - [x] `CHANGELOG.md` added
-- [ ] Replace the placeholder `"publisher"` value in `package.json` with your real registered publisher ID
+- [x] Replace the placeholder `"publisher"` value in `package.json` with your real registered publisher ID
 
 **Marketplace account**
 - [ ] Create a publisher on the [VS Code Marketplace](https://marketplace.visualstudio.com/manage) (requires an Azure DevOps organization)

@@ -3,7 +3,7 @@
   "displayName": "EventLoop Studio",
   "description": "Visualize how JavaScript's call stack, queues, and event loop actually execute your code.",
   "version": "0.0.1",
-  "publisher": "YOUR_PUBLISHER_ID",
+  "publisher": "SubhadeepGhorai",
   "author": "JACOBIAN01",
   "license": "MIT",
   "repository": {
