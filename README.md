@@ -8,6 +8,16 @@
 
 ---
 
+## Creator
+
+Built by **Subhadeep Ghorai**, an SDE and Instructor at Newton School of Technology. This extension grew out of watching the same event loop confusion come up again and again while teaching, and deciding it deserved something you can actually run and watch instead of just a diagram.
+
+Made for JavaScript developers, students, and anyone preparing for an interview who wants to *see* why a `setTimeout` runs after three promises they were sure would go last.
+
+**Portfolio:** [subhadeep-ghorai.vercel.app](https://subhadeep-ghorai.vercel.app)
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
