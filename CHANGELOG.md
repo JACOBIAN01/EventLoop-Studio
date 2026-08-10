@@ -4,7 +4,23 @@ All notable changes to EventLoop Studio are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.0.1] - Unreleased
+## [0.1.0] - 2026-08-10
+
+### Changed
+
+- License changed from MIT to a proprietary "All Rights Reserved" notice; the `package.json`
+  license field is now `UNLICENSED`. Past versions distributed under MIT remain under those
+  terms for whoever already received them.
+- Added a **Creator** section to the README with author bio and portfolio link.
+
+### Fixed
+
+- Architecture diagrams in the README (recording pipeline, Visualize sequence, event loop
+  decision flowchart) are now rendered as static images instead of Mermaid code blocks. The
+  VS Code Marketplace's README renderer does not support Mermaid and was displaying the raw
+  diagram syntax as plain text instead of a diagram.
+
+## [0.0.1] - 2026-08-09
 
 ### Added
 
