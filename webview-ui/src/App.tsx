@@ -1,24 +1,26 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LayoutGroup } from 'framer-motion';
-import type { ExecutionStep, Trace } from '../../src/shared/types';
+import type { ExecutionStep, NodePhase, Trace } from '../../src/shared/types';
 import { usePlayback } from './state/usePlayback';
 import { explainStep } from './lib/captions';
 import { SourceCode } from './components/SourceCode';
 import { CallStack } from './components/CallStack';
 import { Heap } from './components/Heap';
-import { WebApis } from './components/WebApis';
-import { MicrotaskQueue } from './components/MicrotaskQueue';
-import { MacrotaskQueue } from './components/MacrotaskQueue';
+import { QueueList } from './components/QueueList';
 import { EventLoop, LoopStatus, STATUS_COPY, STATUS_COLOR } from './components/EventLoop';
+import { NodeEventLoopRing } from './components/NodeEventLoopRing';
 import { ConsolePanel } from './components/ConsolePanel';
 import { Controls } from './components/Controls';
 import { Panel } from './components/Panel';
 import { CaptionBar } from './components/CaptionBar';
 
-/** The subset of the VS Code webview API we need — just enough to persist a preference. */
+export type EventLoopMode = 'browser' | 'node';
+
+/** The subset of the VS Code webview API we need — persisting a preference and messaging the host. */
 export interface WebviewStateApi {
   getState: () => any;
   setState: (state: any) => void;
+  postMessage?: (message: any) => void;
 }
 
 export interface PendingItem {
@@ -43,14 +45,22 @@ export interface StackFrame {
 export interface DerivedState {
   callStack: StackFrame[];
   heap: Record<string, string>;
-  /** Timers scheduled but not yet run, currently considered "still waiting" (Web APIs view). */
+  /** Timers scheduled but not yet run, currently considered "still waiting" (Web APIs / Pending Timers view). */
   webApiTimers: PendingItem[];
-  /** Same underlying pending timers, once they're conceptually ready to be pulled onto the stack. */
+  /** Same underlying pending timers, once ready: browser mode's Macrotask Queue, node mode's Timers phase. */
   macrotaskQueueTimers: PendingItem[];
   pendingMicrotasks: PendingItem[];
+  /** Node mode only — always empty in a browser-mode trace, since nothing can schedule into it. */
+  pendingNextTicks: PendingItem[];
+  pendingImmediates: PendingItem[];
+  pendingIO: PendingItem[];
+  pendingSystemCallbacks: PendingItem[];
+  pendingCloseCallbacks: PendingItem[];
   consoleOutput: string[];
   currentLine: number | null;
   loopStatus: LoopStatus;
+  /** Node mode only — which of the six libuv phases the loop is currently in, driven directly by 'enter-phase' steps. */
+  currentPhase: NodePhase | null;
 }
 
 const EMPTY_STATE: DerivedState = {
@@ -59,9 +69,15 @@ const EMPTY_STATE: DerivedState = {
   webApiTimers: [],
   macrotaskQueueTimers: [],
   pendingMicrotasks: [],
+  pendingNextTicks: [],
+  pendingImmediates: [],
+  pendingIO: [],
+  pendingSystemCallbacks: [],
+  pendingCloseCallbacks: [],
   consoleOutput: [],
   currentLine: null,
   loopStatus: 'idle',
+  currentPhase: null,
 };
 
 /**
@@ -103,8 +119,14 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
   // was a single global flag recomputed from transient call-stack emptiness, not a per-timer fact.
   let pendingTimers: (PendingItem & { location: 'webapi' | 'macrotask' })[] = [];
   let pendingMicrotasks: PendingItem[] = [];
+  let pendingNextTicks: PendingItem[] = [];
+  let pendingImmediates: PendingItem[] = [];
+  let pendingIO: PendingItem[] = [];
+  let pendingSystemCallbacks: PendingItem[] = [];
+  let pendingCloseCallbacks: PendingItem[] = [];
   const consoleOutput: string[] = [];
   let currentLine: number | null = null;
+  let currentPhase: NodePhase | null = null;
 
   // Execution-context stack for inferring loop status: the top entry tells us
   // whether we're currently running the main script, a microtask callback, or
@@ -189,6 +211,45 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
       case 'line':
         // line tracking already handled above
         break;
+
+      case 'enter-phase':
+        currentPhase = (step.detail as NodePhase | undefined) ?? currentPhase;
+        break;
+
+      case 'schedule-nexttick':
+        pendingNextTicks = [...pendingNextTicks, { id: step.id, label: step.label, detail: step.detail }];
+        break;
+      case 'run-nexttick':
+        pendingNextTicks = removeScheduledItem(pendingNextTicks, step);
+        break;
+
+      case 'schedule-immediate':
+        pendingImmediates = [...pendingImmediates, { id: step.id, label: step.label, detail: step.detail }];
+        break;
+      case 'run-immediate':
+        pendingImmediates = removeScheduledItem(pendingImmediates, step);
+        break;
+
+      case 'schedule-io':
+        pendingIO = [...pendingIO, { id: step.id, label: step.label, detail: step.detail }];
+        break;
+      case 'run-io':
+        pendingIO = removeScheduledItem(pendingIO, step);
+        break;
+
+      case 'schedule-syscallback':
+        pendingSystemCallbacks = [...pendingSystemCallbacks, { id: step.id, label: step.label, detail: step.detail }];
+        break;
+      case 'run-syscallback':
+        pendingSystemCallbacks = removeScheduledItem(pendingSystemCallbacks, step);
+        break;
+
+      case 'schedule-close':
+        pendingCloseCallbacks = [...pendingCloseCallbacks, { id: step.id, label: step.label, detail: step.detail }];
+        break;
+      case 'run-close':
+        pendingCloseCallbacks = removeScheduledItem(pendingCloseCallbacks, step);
+        break;
     }
   }
 
@@ -217,9 +278,15 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
     webApiTimers,
     macrotaskQueueTimers,
     pendingMicrotasks,
+    pendingNextTicks,
+    pendingImmediates,
+    pendingIO,
+    pendingSystemCallbacks,
+    pendingCloseCallbacks,
     consoleOutput,
     currentLine,
     loopStatus,
+    currentPhase,
   };
 }
 

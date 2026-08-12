@@ -6,7 +6,7 @@ import { buildAstSummary } from './parser/astSummary';
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context)),
+    vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context, 'browser')),
     vscode.commands.registerCommand(COMMANDS.showAst, () => showAstSummary()),
     vscode.commands.registerCommand(COMMANDS.helloDeveloper, () => {
       vscode.window.showInformationMessage('Hello Subhadeep');
@@ -14,7 +14,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-async function visualizeEventLoop(context: vscode.ExtensionContext) {
+async function visualizeEventLoop(context: vscode.ExtensionContext, mode: 'browser' | 'node') {
   const editor = vscode.window.activeTextEditor;
   if (!editor || editor.document.languageId !== 'javascript') {
     vscode.window.showWarningMessage(
@@ -23,8 +23,10 @@ async function visualizeEventLoop(context: vscode.ExtensionContext) {
     return;
   }
 
-  const panel = EventLoopPanel.createOrShow(context.extensionUri);
-  const trace = await recordTrace(editor.document.getText(), editor.document.fileName);
+  const panel = EventLoopPanel.createOrShow(context.extensionUri, (newMode) =>
+    visualizeEventLoop(context, newMode),
+  );
+  const trace = await recordTrace(editor.document.getText(), editor.document.fileName, mode);
   panel.postTrace(trace);
 }
 

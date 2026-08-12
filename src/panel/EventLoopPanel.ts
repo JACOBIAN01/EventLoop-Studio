@@ -8,8 +8,12 @@ export class EventLoopPanel {
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
   private lastTrace: Trace | undefined;
+  private readonly onRequestTrace: (mode: 'browser' | 'node') => void;
 
-  static createOrShow(extensionUri: vscode.Uri): EventLoopPanel {
+  static createOrShow(
+    extensionUri: vscode.Uri,
+    onRequestTrace: (mode: 'browser' | 'node') => void,
+  ): EventLoopPanel {
     const column = vscode.window.activeTextEditor?.viewColumn;
 
     if (EventLoopPanel.current) {
@@ -28,20 +32,31 @@ export class EventLoopPanel {
       },
     );
 
-    EventLoopPanel.current = new EventLoopPanel(panel, extensionUri);
+    EventLoopPanel.current = new EventLoopPanel(panel, extensionUri, onRequestTrace);
     return EventLoopPanel.current;
   }
 
-  private constructor(panel: vscode.WebviewPanel, extensionUri: vscode.Uri) {
+  private constructor(
+    panel: vscode.WebviewPanel,
+    extensionUri: vscode.Uri,
+    onRequestTrace: (mode: 'browser' | 'node') => void,
+  ) {
     this.panel = panel;
+    this.onRequestTrace = onRequestTrace;
     this.panel.webview.html = this.buildHtml(extensionUri);
 
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
 
     this.panel.webview.onDidReceiveMessage(
       (message: WebviewToHostMessage) => {
-        if ((message.type === 'ready' || message.type === 'requestTrace') && this.lastTrace) {
-          this.send({ type: 'trace', payload: this.lastTrace });
+        if (message.type === 'ready') {
+          if (this.lastTrace) {
+            this.send({ type: 'trace', payload: this.lastTrace });
+          }
+        } else if (message.type === 'requestTrace') {
+          // Re-runs the active file fresh in the requested mode, e.g. when the user flips
+          // the Browser/Node.js toggle, rather than just replaying the last recorded trace.
+          this.onRequestTrace(message.mode);
         }
       },
       null,

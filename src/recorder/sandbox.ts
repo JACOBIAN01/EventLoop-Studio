@@ -6,7 +6,7 @@ const MAX_STEPS = 4000;
 const MAX_MACROTASK_ITERATIONS = 2000;
 const MICROTASK_FLUSH_ATTEMPTS = 20;
 
-interface PendingTimer {
+interface PendingCallback {
   id: number;
   seq: number;
   delay: number;
@@ -21,10 +21,20 @@ interface PendingTimer {
  *
  * Design note: we let the vm context's OWN native Promise implementation do the real work —
  * it shares the process's real microtask queue, so ordering between chained/nested promises
- * is spec-correct "for free". We only fake `setTimeout`, since real timers would force us to
- * actually wait out real delays to record a trace.
+ * is spec-correct "for free". We only fake `setTimeout` (and, in 'node' mode, `process.nextTick`/
+ * `setImmediate`/the simulated I/O APIs below), since real timers/IO would force us to actually
+ * wait out real delays to record a trace.
+ *
+ * 'browser' mode is untouched from its original behavior. 'node' mode additionally exposes
+ * `process.nextTick`, `setImmediate`, `simulateIO`, `simulateSystemCallback`, and `createHandle`,
+ * and drives the recording through the real six libuv phases (timers, pending callbacks,
+ * idle/prepare, poll, check, close callbacks) instead of a single macrotask queue.
  */
-export async function recordTrace(sourceCode: string, fileName: string): Promise<Trace> {
+export async function recordTrace(
+  sourceCode: string,
+  fileName: string,
+  mode: 'browser' | 'node' = 'browser',
+): Promise<Trace> {
   const steps: ExecutionStep[] = [];
   let nextId = 0;
   let truncated = false;
@@ -48,13 +58,21 @@ export async function recordTrace(sourceCode: string, fileName: string): Promise
       fileName,
       sourceCode,
       steps: [],
+      mode,
       error: `Could not parse this file as JavaScript: ${err.message}`,
     };
   }
 
-  const pendingTimers: PendingTimer[] = [];
+  const pendingTimers: PendingCallback[] = [];
   let timerSeq = 0;
   let timerIdCounter = 1;
+
+  const pendingNextTicks: PendingCallback[] = [];
+  const pendingImmediates: PendingCallback[] = [];
+  const pendingIO: PendingCallback[] = [];
+  const pendingSystemCallbacks: PendingCallback[] = [];
+  const pendingCloseCallbacks: PendingCallback[] = [];
+  let nodeApiSeq = 0;
 
   const traceApi = {
     enter(label: string, line: number) {
@@ -104,6 +122,51 @@ export async function recordTrace(sourceCode: string, fileName: string): Promise
     }
   }
 
+  function fakeNextTick(callback: (...a: unknown[]) => void, ...extraArgs: unknown[]) {
+    const id = nodeApiSeq++;
+    const label = 'process.nextTick(...)';
+    const scheduleStepId = push('schedule-nexttick', { label });
+    pendingNextTicks.push({ id, seq: id, delay: 0, label, scheduleStepId, callback: () => callback(...extraArgs) });
+  }
+
+  function fakeSetImmediate(callback: (...a: unknown[]) => void, ...extraArgs: unknown[]) {
+    const id = nodeApiSeq++;
+    const label = 'setImmediate(...)';
+    const scheduleStepId = push('schedule-immediate', { label });
+    pendingImmediates.push({ id, seq: id, delay: 0, label, scheduleStepId, callback: () => callback(...extraArgs) });
+    return id;
+  }
+
+  // Models what real fs/network callbacks use: fires in the Poll phase. `delay` is only ever
+  // used to order multiple simulated I/O ops relative to each other within one Poll pass.
+  function fakeSimulateIO(label: string, delay = 0, callback?: (...a: unknown[]) => void) {
+    const id = nodeApiSeq++;
+    const stepLabel = `simulateIO(${JSON.stringify(label)})`;
+    const scheduleStepId = push('schedule-io', { label: stepLabel, detail: `${delay}ms` });
+    pendingIO.push({ id, seq: id, delay, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+  }
+
+  // Models the category of deferred system-level callbacks (e.g. a TCP ECONNREFUSED) that the
+  // real Pending Callbacks phase exists for.
+  function fakeSimulateSystemCallback(label: string, delay = 0, callback?: (...a: unknown[]) => void) {
+    const id = nodeApiSeq++;
+    const stepLabel = `simulateSystemCallback(${JSON.stringify(label)})`;
+    const scheduleStepId = push('schedule-syscallback', { label: stepLabel, detail: `${delay}ms` });
+    pendingSystemCallbacks.push({ id, seq: id, delay, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+  }
+
+  function fakeCreateHandle(label: string) {
+    const handleLabel = `handle(${JSON.stringify(label)})`;
+    return {
+      close(callback?: (...a: unknown[]) => void) {
+        const id = nodeApiSeq++;
+        const stepLabel = `${handleLabel}.close()`;
+        const scheduleStepId = push('schedule-close', { label: stepLabel });
+        pendingCloseCallbacks.push({ id, seq: id, delay: 0, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+      },
+    };
+  }
+
   function wrapMicrotaskCallback(callback: unknown, label: string) {
     if (typeof callback !== 'function') {
       return callback;
@@ -136,6 +199,14 @@ export async function recordTrace(sourceCode: string, fileName: string): Promise
     setTimeout: fakeSetTimeout,
     clearTimeout: fakeClearTimeout,
   };
+
+  if (mode === 'node') {
+    sandbox.process = { nextTick: fakeNextTick };
+    sandbox.setImmediate = fakeSetImmediate;
+    sandbox.simulateIO = fakeSimulateIO;
+    sandbox.simulateSystemCallback = fakeSimulateSystemCallback;
+    sandbox.createHandle = fakeCreateHandle;
+  }
 
   const context = vm.createContext(sandbox);
 
@@ -171,37 +242,89 @@ export async function recordTrace(sourceCode: string, fileName: string): Promise
   }
   push('pop-stack', { label: 'global()' });
 
-  await flushMicrotasks();
-
-  let macrotaskIterations = 0;
-  while (pendingTimers.length > 0 && macrotaskIterations < MAX_MACROTASK_ITERATIONS) {
-    macrotaskIterations++;
-    if (steps.length >= MAX_STEPS) {
-      truncated = true;
-      break;
-    }
-
-    pendingTimers.sort((a, b) => a.delay - b.delay || a.seq - b.seq);
-    const timer = pendingTimers.shift()!;
-
-    // Discrete, one-time transition: Web APIs -> Macrotask Queue. Emitted as its own step
-    // (distinct from 'run-timer' below) so the UI can show this timer sitting in the queue,
-    // waiting for the call stack to empty, rather than inferring queue membership from
-    // whatever else happens to be on the stack at any given instant.
-    push('timer-ready', { label: timer.label, refId: timer.scheduleStepId });
-    push('run-timer', { label: timer.label, refId: timer.scheduleStepId });
-    push('push-stack', { label: `${timer.label} handler`, refId: timer.scheduleStepId });
-    try {
-      timer.callback();
-    } catch (err: any) {
-      push('console-log', { label: 'console.error', detail: `Uncaught: ${err?.message ?? String(err)}` });
-    }
-    push('pop-stack', { label: `${timer.label} handler` });
-
+  if (mode === 'browser') {
     await flushMicrotasks();
-  }
-  if (macrotaskIterations >= MAX_MACROTASK_ITERATIONS) {
-    truncated = true;
+
+    let macrotaskIterations = 0;
+    while (pendingTimers.length > 0 && macrotaskIterations < MAX_MACROTASK_ITERATIONS) {
+      macrotaskIterations++;
+      if (steps.length >= MAX_STEPS) {
+        truncated = true;
+        break;
+      }
+
+      pendingTimers.sort((a, b) => a.delay - b.delay || a.seq - b.seq);
+      const timer = pendingTimers.shift()!;
+
+      // Discrete, one-time transition: Web APIs -> Macrotask Queue. Emitted as its own step
+      // (distinct from 'run-timer' below) so the UI can show this timer sitting in the queue,
+      // waiting for the call stack to empty, rather than inferring queue membership from
+      // whatever else happens to be on the stack at any given instant.
+      push('timer-ready', { label: timer.label, refId: timer.scheduleStepId });
+      push('run-timer', { label: timer.label, refId: timer.scheduleStepId });
+      push('push-stack', { label: `${timer.label} handler`, refId: timer.scheduleStepId });
+      try {
+        timer.callback();
+      } catch (err: any) {
+        push('console-log', { label: 'console.error', detail: `Uncaught: ${err?.message ?? String(err)}` });
+      }
+      push('pop-stack', { label: `${timer.label} handler` });
+
+      await flushMicrotasks();
+    }
+    if (macrotaskIterations >= MAX_MACROTASK_ITERATIONS) {
+      truncated = true;
+    }
+  } else {
+    await drainMicroQueues();
+
+    let phaseIterations = 0;
+    while (
+      (pendingTimers.length > 0 ||
+        pendingSystemCallbacks.length > 0 ||
+        pendingIO.length > 0 ||
+        pendingImmediates.length > 0 ||
+        pendingCloseCallbacks.length > 0) &&
+      phaseIterations < MAX_MACROTASK_ITERATIONS
+    ) {
+      phaseIterations++;
+      if (steps.length >= MAX_STEPS) {
+        truncated = true;
+        break;
+      }
+
+      push('enter-phase', { label: 'Timers', detail: 'timers' });
+      for (const timer of takeAllSorted(pendingTimers)) {
+        await runPhaseCallback(timer, 'timer-ready', 'run-timer');
+      }
+
+      push('enter-phase', { label: 'Pending Callbacks', detail: 'pending-callbacks' });
+      for (const cb of takeAllSorted(pendingSystemCallbacks)) {
+        await runPhaseCallback(cb, null, 'run-syscallback');
+      }
+
+      // Idle, Prepare: always empty. No fake API ever feeds this queue, matching real Node,
+      // which gives userland code no hook into this phase either.
+      push('enter-phase', { label: 'Idle, Prepare', detail: 'idle-prepare' });
+
+      push('enter-phase', { label: 'Poll', detail: 'poll' });
+      for (const io of takeAllSorted(pendingIO)) {
+        await runPhaseCallback(io, null, 'run-io');
+      }
+
+      push('enter-phase', { label: 'Check', detail: 'check' });
+      for (const immediate of pendingImmediates.splice(0)) {
+        await runPhaseCallback(immediate, null, 'run-immediate');
+      }
+
+      push('enter-phase', { label: 'Close Callbacks', detail: 'close-callbacks' });
+      for (const close of pendingCloseCallbacks.splice(0)) {
+        await runPhaseCallback(close, null, 'run-close');
+      }
+    }
+    if (phaseIterations >= MAX_MACROTASK_ITERATIONS) {
+      truncated = true;
+    }
   }
 
   async function flushMicrotasks() {
@@ -214,10 +337,60 @@ export async function recordTrace(sourceCode: string, fileName: string): Promise
     }
   }
 
+  // Node mode only: process.nextTick always drains to exhaustion before microtasks, and is
+  // re-checked after every microtask flush, since a microtask can itself schedule a nextTick.
+  async function drainMicroQueues() {
+    let sawActivity = true;
+    while (sawActivity) {
+      sawActivity = false;
+      while (pendingNextTicks.length > 0) {
+        const nextTick = pendingNextTicks.shift()!;
+        await runPhaseCallback(nextTick, null, 'run-nexttick', { skipDrain: true });
+        sawActivity = true;
+      }
+      const before = steps.length;
+      await flushMicrotasks();
+      if (steps.length > before) {
+        sawActivity = true;
+      }
+    }
+  }
+
+  // Snapshots a queue (so anything scheduled *during* this phase waits for its next turn,
+  // not the current pass) sorted by delay then insertion order.
+  function takeAllSorted(queue: PendingCallback[]): PendingCallback[] {
+    const batch = queue.splice(0);
+    batch.sort((a, b) => a.delay - b.delay || a.seq - b.seq);
+    return batch;
+  }
+
+  async function runPhaseCallback(
+    item: PendingCallback,
+    readyKind: StepKind | null,
+    runKind: StepKind,
+    opts: { skipDrain?: boolean } = {},
+  ) {
+    if (readyKind) {
+      push(readyKind, { label: item.label, refId: item.scheduleStepId });
+    }
+    push(runKind, { label: item.label, refId: item.scheduleStepId });
+    push('push-stack', { label: `${item.label} handler`, refId: item.scheduleStepId });
+    try {
+      item.callback();
+    } catch (err: any) {
+      push('console-log', { label: 'console.error', detail: `Uncaught: ${err?.message ?? String(err)}` });
+    }
+    push('pop-stack', { label: `${item.label} handler` });
+    if (!opts.skipDrain) {
+      await drainMicroQueues();
+    }
+  }
+
   return {
     fileName,
     sourceCode,
     steps,
+    mode,
     truncated: truncated || undefined,
     error: errorMessage,
   };
