@@ -311,6 +311,14 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
     });
   };
 
+  // Derived from the trace itself, not tracked separately — the currently-displayed mode is
+  // exactly whatever mode the current trace was actually recorded under, never a locally-guessed
+  // value that could drift out of sync while a re-record is in flight.
+  const activeMode: EventLoopMode = trace?.mode ?? 'browser';
+  const setMode = (next: EventLoopMode) => {
+    vscodeApi?.postMessage?.({ type: 'requestTrace', mode: next });
+  };
+
   const derived = useMemo(
     () => computeStateAtStep(steps, playback.currentStepIndex),
     [steps, playback.currentStepIndex]
@@ -344,8 +352,34 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
           <span className="text-[13px] font-semibold tracking-tight text-slate-900">EventLoop Studio</span>
           <span className="h-3.5 w-px flex-none bg-slate-200" aria-hidden="true" />
           <span className="truncate font-mono text-xs text-slate-500">{trace.fileName}</span>
+
+          <div className="ml-auto flex flex-none items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => setMode('browser')}
+              aria-pressed={activeMode === 'browser'}
+              title="Model the browser's event loop: Web APIs, Microtask Queue, Macrotask Queue"
+              className={`rounded-[5px] px-2 py-1 transition-colors ${
+                activeMode === 'browser' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Browser
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('node')}
+              aria-pressed={activeMode === 'node'}
+              title="Model the real Node.js event loop: all six libuv phases, plus process.nextTick"
+              className={`rounded-[5px] px-2 py-1 transition-colors ${
+                activeMode === 'node' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Node.js
+            </button>
+          </div>
+
           {trace.truncated && (
-            <span className="ml-auto rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+            <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
               trace truncated
             </span>
           )}
@@ -386,26 +420,58 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
             >
               <Heap entries={derived.heap} />
             </Panel>
+            {activeMode === 'browser' ? (
+              <Panel
+                title="Event Loop"
+                accent="slate"
+                titleClassName={STATUS_COLOR[derived.loopStatus]}
+                description="Constantly checks whether the Call Stack is empty. If it is, all microtasks run first, then one macrotask is pulled in."
+                badge={
+                  <span className={`text-[11px] font-semibold ${STATUS_COLOR[derived.loopStatus]}`}>
+                    {STATUS_COPY[derived.loopStatus]}
+                  </span>
+                }
+              >
+                <EventLoop status={derived.loopStatus} stackEmpty={derived.callStack.length === 0} />
+              </Panel>
+            ) : (
+              <Panel
+                title="Event Loop"
+                accent="slate"
+                description="Cycles through six fixed phases, always in this order, every iteration. Not every script uses all six."
+                badge={
+                  <span className="text-[11px] font-semibold text-indigo-700">
+                    {derived.currentPhase ? PHASE_LABEL[derived.currentPhase] : 'Idle'}
+                  </span>
+                }
+              >
+                <NodeEventLoopRing
+                  currentPhase={derived.currentPhase}
+                  timers={derived.macrotaskQueueTimers}
+                  pendingCallbacks={derived.pendingSystemCallbacks}
+                  poll={derived.pendingIO}
+                  check={derived.pendingImmediates}
+                  closeCallbacks={derived.pendingCloseCallbacks}
+                />
+              </Panel>
+            )}
             <Panel
-              title="Event Loop"
-              accent="slate"
-              titleClassName={STATUS_COLOR[derived.loopStatus]}
-              description="Constantly checks whether the Call Stack is empty. If it is, all microtasks run first, then one macrotask is pulled in."
-              badge={
-                <span className={`text-[11px] font-semibold ${STATUS_COLOR[derived.loopStatus]}`}>
-                  {STATUS_COPY[derived.loopStatus]}
-                </span>
-              }
-            >
-              <EventLoop status={derived.loopStatus} stackEmpty={derived.callStack.length === 0} />
-            </Panel>
-            <Panel
-              title="Web APIs"
+              title={activeMode === 'node' ? 'Pending Timers' : 'Web APIs'}
               accent="teal"
               bodyClassName="overflow-y-auto"
-              description="Browser or Node features, like setTimeout, that run outside the JS engine. That's why your code doesn't have to wait for them."
+              description={
+                activeMode === 'node'
+                  ? "setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase."
+                  : 'Browser or Node features, like setTimeout, that run outside the JS engine. That\'s why your code doesn\'t have to wait for them.'
+              }
             >
-              <WebApis timers={derived.webApiTimers} />
+              <QueueList
+                items={derived.webApiTimers}
+                emptyText="no pending timers"
+                color="teal"
+                direction="col"
+                initialOffset={{ x: -36, y: -22, rotate: -8 }}
+              />
             </Panel>
             <Panel
               title="Microtask Queue"
@@ -413,16 +479,45 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
               bodyClassName="overflow-y-auto"
               description="Holds Promise and async/await callbacks. Always fully drained before the next macrotask runs, no matter how short that macrotask's delay is."
             >
-              <MicrotaskQueue items={derived.pendingMicrotasks} />
+              <QueueList
+                items={derived.pendingMicrotasks}
+                emptyText="no microtasks queued"
+                color="amber"
+                showNextBadge
+                initialOffset={{ y: -34, rotate: 6 }}
+              />
             </Panel>
-            <Panel
-              title="Macrotask Queue"
-              accent="violet"
-              bodyClassName="overflow-y-auto"
-              description="Holds callbacks like expired timers. The event loop only pulls one once the Call Stack and Microtask Queue are both completely empty."
-            >
-              <MacrotaskQueue items={derived.macrotaskQueueTimers} />
-            </Panel>
+            {activeMode === 'browser' ? (
+              <Panel
+                title="Macrotask Queue"
+                accent="violet"
+                bodyClassName="overflow-y-auto"
+                description="Holds callbacks like expired timers. The event loop only pulls one once the Call Stack and Microtask Queue are both completely empty."
+              >
+                <QueueList
+                  items={derived.macrotaskQueueTimers}
+                  emptyText="no macrotasks ready"
+                  color="violet"
+                  showNextBadge
+                  initialOffset={{ x: -34, y: -34, rotate: -6 }}
+                />
+              </Panel>
+            ) : (
+              <Panel
+                title="nextTick Queue"
+                accent="sky"
+                bodyClassName="overflow-y-auto"
+                description="process.nextTick callbacks. Always drains completely before the Microtask Queue gets a turn, every single time, no exceptions."
+              >
+                <QueueList
+                  items={derived.pendingNextTicks}
+                  emptyText="no nextTick callbacks queued"
+                  color="sky"
+                  showNextBadge
+                  initialOffset={{ x: -34, y: -34, rotate: -6 }}
+                />
+              </Panel>
+            )}
           </section>
         </div>
 
