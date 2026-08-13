@@ -2,7 +2,7 @@ import React from 'react';
 import { InfoDot } from './InfoDot';
 
 /** Shared accent identity for each panel, keeps the palette consistent and centralized. */
-export type PanelAccent = 'indigo' | 'emerald' | 'teal' | 'amber' | 'violet' | 'slate';
+export type PanelAccent = 'indigo' | 'emerald' | 'teal' | 'amber' | 'violet' | 'slate' | 'sky';
 
 interface PanelProps {
   title: string;
@@ -24,6 +24,7 @@ const ACCENT: Record<PanelAccent, string> = {
   amber: 'bg-amber-500',
   violet: 'bg-violet-500',
   slate: 'bg-slate-300',
+  sky: 'bg-sky-500',
 };
 
 /**

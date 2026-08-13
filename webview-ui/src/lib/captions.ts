@@ -65,6 +65,54 @@ export function explainStep(step: ExecutionStep): Caption | null {
     case 'line':
       return null;
 
+    case 'enter-phase':
+      return { tier: 'rule', text: `The loop enters the ${step.label} phase, one of Node's six, always in this order.` };
+
+    case 'schedule-nexttick':
+      return {
+        tier: 'rule',
+        text: `process.nextTick queues this ahead of everything else, it always drains before the Microtask Queue gets a turn.`,
+      };
+
+    case 'run-nexttick':
+      return { tier: 'rule', text: `nextTick queue drains before microtasks, every single time both are pending.` };
+
+    case 'schedule-immediate':
+      return {
+        tier: 'rule',
+        text: `setImmediate queues this for the Check phase. Racing setTimeout(fn, 0) at the top level is genuinely undocumented in real Node; inside an I/O callback, setImmediate always wins.`,
+      };
+
+    case 'run-immediate':
+      return { tier: 'rule', text: `Check phase: runs right after Poll, in the same loop iteration it was scheduled in.` };
+
+    case 'schedule-io':
+      return {
+        tier: 'rule',
+        text: `Genuinely real, not simulated: dispatched to Node's actual libuv thread pool right now. Its callback fires in the Poll phase once the real read completes.`,
+      };
+
+    case 'run-io':
+      return {
+        tier: 'rule',
+        text: `Poll phase: the real fs.readFile actually finished. This is what setImmediate races against, not setTimeout.`,
+      };
+
+    case 'schedule-syscallback':
+      return {
+        tier: 'rule',
+        text: `Models the category of deferred system-level callback (e.g. a TCP error) the Pending Callbacks phase exists for.`,
+      };
+
+    case 'run-syscallback':
+      return { tier: 'rule', text: `Pending Callbacks phase: runs right after Timers, before Poll.` };
+
+    case 'schedule-close':
+      return { tier: 'rule', text: `A handle was closed; its callback is queued for the Close Callbacks phase.` };
+
+    case 'run-close':
+      return { tier: 'rule', text: `Close Callbacks: the last phase in the cycle, e.g. socket.on('close', ...).` };
+
     default:
       return null;
   }
