@@ -1,4 +1,5 @@
 import * as vm from 'vm';
+import * as fs from 'fs';
 import { ExecutionStep, StepKind, Trace } from '../shared/types';
 import { instrument } from './instrument';
 
@@ -13,6 +14,12 @@ interface PendingCallback {
   label: string;
   scheduleStepId: number;
   callback: () => void;
+  /**
+   * Node mode's Poll phase only: resolves when a genuinely real op (currently `readFileReal`,
+   * a real `fs.readFile` dispatched to the real libuv thread pool) actually completes. Absent
+   * on every other queue, those stay honest, in-memory simulations with no real-world timing.
+   */
+  waitFor?: Promise<void>;
 }
 
 /**
@@ -21,14 +28,17 @@ interface PendingCallback {
  *
  * Design note: we let the vm context's OWN native Promise implementation do the real work —
  * it shares the process's real microtask queue, so ordering between chained/nested promises
- * is spec-correct "for free". We only fake `setTimeout` (and, in 'node' mode, `process.nextTick`/
- * `setImmediate`/the simulated I/O APIs below), since real timers/IO would force us to actually
- * wait out real delays to record a trace.
+ * is spec-correct "for free". We fake `setTimeout`/`process.nextTick`/`setImmediate`/
+ * `simulateSystemCallback`/`createHandle` as in-memory queues this recorder fully controls,
+ * since real timers/system callbacks would force us to actually wait out real delays (or fake
+ * system errors) to record a trace. `readFileReal` is the one deliberate exception: it's a
+ * genuinely real `fs.readFile`, dispatched to Node's real libuv thread pool, see the Poll phase
+ * loop below.
  *
  * 'browser' mode is untouched from its original behavior. 'node' mode additionally exposes
- * `process.nextTick`, `setImmediate`, `simulateIO`, `simulateSystemCallback`, and `createHandle`,
- * and drives the recording through the real six libuv phases (timers, pending callbacks,
- * idle/prepare, poll, check, close callbacks) instead of a single macrotask queue.
+ * `process.nextTick`, `setImmediate`, `readFileReal`, `simulateSystemCallback`, and
+ * `createHandle`, and drives the recording through the real six libuv phases (timers, pending
+ * callbacks, idle/prepare, poll, check, close callbacks) instead of a single macrotask queue.
  */
 export async function recordTrace(
   sourceCode: string,
@@ -137,13 +147,19 @@ export async function recordTrace(
     return id;
   }
 
-  // Models what real fs/network callbacks use: fires in the Poll phase. `delay` is only ever
-  // used to order multiple simulated I/O ops relative to each other within one Poll pass.
-  function fakeSimulateIO(label: string, delay = 0, callback?: (...a: unknown[]) => void) {
+  // Genuinely real, not simulated: dispatches an actual fs.readFile of the file being
+  // visualized to Node's real libuv thread pool. Its callback fires in the Poll phase only once
+  // the real op actually completes — see the Promise.race in the Poll phase loop below, which
+  // is what lets multiple real ops complete in whatever order they genuinely finish in, rather
+  // than an order this recorder imposes.
+  function fakeReadFileReal(label: string, callback?: (...a: unknown[]) => void) {
     const id = nodeApiSeq++;
-    const stepLabel = `simulateIO(${JSON.stringify(label)})`;
-    const scheduleStepId = push('schedule-io', { label: stepLabel, detail: `${delay}ms` });
-    pendingIO.push({ id, seq: id, delay, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+    const stepLabel = `readFileReal(${JSON.stringify(label)})`;
+    const scheduleStepId = push('schedule-io', { label: stepLabel, detail: 'real libuv thread pool' });
+    const waitFor = new Promise<void>((resolve) => {
+      fs.readFile(fileName || __filename, () => resolve());
+    });
+    pendingIO.push({ id, seq: id, delay: 0, label: stepLabel, scheduleStepId, callback: () => callback?.(), waitFor });
   }
 
   // Models the category of deferred system-level callbacks (e.g. a TCP ECONNREFUSED) that the
@@ -203,7 +219,7 @@ export async function recordTrace(
   if (mode === 'node') {
     sandbox.process = { nextTick: fakeNextTick };
     sandbox.setImmediate = fakeSetImmediate;
-    sandbox.simulateIO = fakeSimulateIO;
+    sandbox.readFileReal = fakeReadFileReal;
     sandbox.simulateSystemCallback = fakeSimulateSystemCallback;
     sandbox.createHandle = fakeCreateHandle;
   }
@@ -308,12 +324,22 @@ export async function recordTrace(
       push('enter-phase', { label: 'Idle, Prepare', detail: 'idle-prepare' });
 
       push('enter-phase', { label: 'Poll', detail: 'poll' });
-      for (const io of takeAllSorted(pendingIO)) {
-        await runPhaseCallback(io, null, 'run-io');
+      // Real completions, not simulated: whichever readFileReal call actually finishes first
+      // (real libuv thread pool) is recorded first, never an order this recorder decides.
+      let ioBatch = pendingIO.splice(0);
+      while (ioBatch.length > 0) {
+        const winner = await Promise.race(ioBatch.map((io) => (io.waitFor ?? Promise.resolve()).then(() => io)));
+        ioBatch = ioBatch.filter((io) => io !== winner);
+        await runPhaseCallback(winner, null, 'run-io');
       }
 
       push('enter-phase', { label: 'Check', detail: 'check' });
-      for (const immediate of pendingImmediates.splice(0)) {
+      // Unlike every other phase, Check does NOT snapshot-and-defer: a setImmediate scheduled
+      // from inside another setImmediate callback runs in this SAME pass, not the next loop
+      // iteration. Re-checking the live queue after every callback (instead of iterating a
+      // one-time snapshot) is what real Node's own immediate-queue draining actually does.
+      while (pendingImmediates.length > 0) {
+        const immediate = pendingImmediates.shift()!;
         await runPhaseCallback(immediate, null, 'run-immediate');
       }
 
