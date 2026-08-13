@@ -61,6 +61,13 @@ export interface DerivedState {
   loopStatus: LoopStatus;
   /** Node mode only — which of the six libuv phases the loop is currently in, driven directly by 'enter-phase' steps. */
   currentPhase: NodePhase | null;
+  /**
+   * The id of the most recent 'run-nexttick'/'run-microtask' step at or before the current index,
+   * or null if neither has run yet. Changes every single drain, not once per phase — used as a
+   * re-triggering key so the Microtask Hub can flash once per real callback, matching how often
+   * nextTick/microtasks actually drain, not once per phase transition.
+   */
+  lastDrainStepId: number | null;
 }
 
 const EMPTY_STATE: DerivedState = {
@@ -78,6 +85,7 @@ const EMPTY_STATE: DerivedState = {
   currentLine: null,
   loopStatus: 'idle',
   currentPhase: null,
+  lastDrainStepId: null,
 };
 
 /**
@@ -133,6 +141,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
   const consoleOutput: string[] = [];
   let currentLine: number | null = null;
   let currentPhase: NodePhase | null = null;
+  let lastDrainStepId: number | null = null;
 
   // Execution-context stack for inferring loop status: the top entry tells us
   // whether we're currently running the main script, a microtask callback, or
@@ -212,6 +221,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
         pendingMicrotasks = removeScheduledItem(pendingMicrotasks, step);
         eventLoopPhase = true;
         contextStack.push({ kind: 'microtask', enterDepth: callStack.length });
+        lastDrainStepId = step.id;
         break;
 
       case 'line':
@@ -227,6 +237,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
         break;
       case 'run-nexttick':
         pendingNextTicks = removeScheduledItem(pendingNextTicks, step);
+        lastDrainStepId = step.id;
         break;
 
       case 'schedule-immediate':
@@ -293,6 +304,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
     currentLine,
     loopStatus,
     currentPhase,
+    lastDrainStepId,
   };
 }
 
