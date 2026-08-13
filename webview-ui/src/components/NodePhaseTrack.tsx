@@ -159,7 +159,7 @@ function MicrotaskHub({
   lastDrainStepId: number | null;
 }) {
   return (
-    <div className="relative mx-auto flex h-full min-h-0 w-full max-w-90 flex-col overflow-hidden rounded-lg border-[1.5px] border-sky-500 bg-sky-50">
+    <div className="relative mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border-[1.5px] border-sky-500 bg-sky-50">
       <AnimatePresence>
         {lastDrainStepId !== null && (
           <motion.span
@@ -172,9 +172,12 @@ function MicrotaskHub({
           />
         )}
       </AnimatePresence>
-      <div className="flex flex-none flex-col gap-0.5 border-b border-sky-100 px-3 py-2">
+      <div className="flex flex-none items-center gap-1.5 border-b border-sky-100 px-3 py-2">
         <span className="text-[11.5px] font-bold text-sky-700">Microtask Hub</span>
-        <span className="text-[9px] italic text-slate-500">drains after every callback, not once per phase</span>
+        <InfoDot
+          label="About the Microtask Hub"
+          text="Drains after every callback, not once per phase — process.nextTick and the Promise/microtask queue are cross-cutting, not phases of their own, so they sit inside the loop they drain between."
+        />
       </div>
       <div className="grid min-h-0 flex-1 grid-cols-2">
         <div className="flex min-h-0 flex-col border-r border-sky-100 px-2.5 py-2">
@@ -231,7 +234,10 @@ export function NodePhaseTrack({
         className="grid min-h-0 flex-1 items-stretch justify-items-stretch gap-x-3 gap-y-1.5"
         style={{
           gridTemplateColumns: 'repeat(9, auto)',
-          gridTemplateRows: 'minmax(0,1.3fr) minmax(0,0.25fr) minmax(0,1.4fr) minmax(0,0.25fr) minmax(0,1.3fr)',
+          // Chip rows (1.3fr each) unchanged from before — the 6 phases keep both their grid
+          // position AND their size. The hub's row grew from 1.4fr to 2.6fr entirely by
+          // shrinking the two spoke-arrow rows (0.25fr -> 0.15fr, they're just 8px icons).
+          gridTemplateRows: 'minmax(0,1.3fr) minmax(0,0.15fr) minmax(0,2.6fr) minmax(0,0.15fr) minmax(0,1.3fr)',
         }}
       >
         {/* Close Callbacks -> Timers: 3 small arrows, not one long line, per the final design */}
