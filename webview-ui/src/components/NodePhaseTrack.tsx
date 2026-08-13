@@ -281,9 +281,12 @@ export function NodePhaseTrack({
                 </span>
               )}
               <div className="flex items-center gap-1">
+                {/* Active state uses a fixed solid indigo + white text (not a translucent
+                    surface tint relying on inherited color) so the number stays legible
+                    regardless of theme. */}
                 <span
                   className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-[9px] font-bold ${
-                    isActive ? 'bg-surface/70' : 'bg-slate-100 text-slate-400'
+                    isActive ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'
                   }`}
                 >
                   {num}
