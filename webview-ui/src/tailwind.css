@@ -1,9 +1,32 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------- */
-/* EventLoop Studio — single branded light theme (not VS Code chrome-     */
-/* matched on purpose). Base document + scrollbar styling that isn't      */
-/* worth expressing as Tailwind utility classes.                          */
+/* EventLoop Studio — Light/Dark theme.                                   */
+/*                                                                        */
+/* Tailwind v4 compiles every palette utility (bg-slate-50, text-indigo-  */
+/* 700, ...) to `var(--color-slate-50)` etc, so redefining those same     */
+/* variables under [data-theme="dark"] flips virtually every existing     */
+/* class in the app with no per-component renames. Two exceptions:       */
+/*                                                                        */
+/*  - `white` and `slate-900` each play TWO unrelated roles in this       */
+/*    codebase: a "surface/heading" role that must invert, and a "text   */
+/*    that must stay white on a saturated badge" / "ConsolePanel's       */
+/*    permanently-dark terminal background" role that must NOT invert.   */
+/*    Solved with two new tokens (`surface`, `heading`) used only at the */
+/*    handful of call sites that need the invertible role; `white` and   */
+/*    `slate-900` themselves are left untouched everywhere else.         */
+/*  - `indigo-700` (Controls.tsx Play-button hover) and `violet-600`      */
+/*    (NodePhaseTrack badge, CallStack gradient stop) are each used as a */
+/*    fixed vivid solid-fill AND as invertible text elsewhere. Those few */
+/*    solid-fill call sites were switched to a literal arbitrary color   */
+/*    (Tailwind's own value for that shade, hardcoded) so the variable   */
+/*    itself is free to invert for its text uses.                       */
+/*                                                                        */
+/* Shades that are only ever a small fixed accent dot/badge/spinner       */
+/* (indigo/violet-500, indigo/violet/emerald/teal/amber/sky-600 CTAs,     */
+/* every hue's -500 Panel dot) are intentionally left out of the override */
+/* table below — they stay the same vivid color in both themes, the way  */
+/* a brand color usually does.                                           */
 /* ---------------------------------------------------------------------- */
 
 html,
@@ -14,8 +37,92 @@ body,
 }
 
 body {
-  background-color: #f8fafc;
+  background-color: var(--color-slate-50);
   -webkit-font-smoothing: antialiased;
+}
+
+/* @theme (not plain :root) is required for Tailwind v4 to actually generate the
+   bg-surface/text-surface/bg-heading/text-heading utilities used below. */
+@theme {
+  /* Surface: bg-white's "panel/header/card background" role only — never
+     text-white (badges), which stays literally white in both themes. */
+  --color-surface: #ffffff;
+  /* Heading: text-slate-900's "emphasized heading/active-line" role only —
+     never ConsolePanel's bg-slate-900 (always-dark terminal), which is
+     untouched by this whole override system. */
+  --color-heading: oklch(20.8% .042 265.755);
+}
+
+:root[data-theme="dark"] {
+  --color-surface: oklch(27.9% .041 260.031);
+  --color-heading: oklch(96.8% .007 247.896);
+
+  /* slate: mirror 50<->700, 100<->600, 200<->500, 300<->400.
+     800/900 deliberately excluded — ConsolePanel's fixed dark terminal look. */
+  --color-slate-50: oklch(37.2% .044 257.287);
+  --color-slate-100: oklch(44.6% .043 257.281);
+  --color-slate-200: oklch(55.4% .046 257.417);
+  --color-slate-300: oklch(70.4% .04 256.788);
+  --color-slate-400: oklch(86.9% .022 252.894);
+  --color-slate-500: oklch(92.9% .013 255.508);
+  --color-slate-600: oklch(96.8% .007 247.896);
+  --color-slate-700: oklch(98.4% .003 247.858);
+
+  /* indigo: 500/600 excluded (fixed CTAs: Play button, toggle dot, header
+     accent bar, speed-selector, CallStack top frame, range accent). 700 is
+     freed for inversion by hardcoding Controls.tsx's one bg-indigo-700 hover
+     as a literal arbitrary color. */
+  --color-indigo-50: oklch(45.7% .24 277.023);
+  --color-indigo-200: oklch(51.1% .262 276.966);
+  --color-indigo-300: oklch(58.5% .233 277.117);
+  --color-indigo-400: oklch(78.5% .115 274.713);
+  --color-indigo-700: oklch(96.2% .018 272.314);
+
+  /* emerald: 400 excluded (ConsolePanel's fixed terminal green), 500 excluded
+     (fixed Panel dot). */
+  --color-emerald-50: oklch(43.2% .095 166.913);
+  --color-emerald-200: oklch(50.8% .118 165.612);
+  --color-emerald-600: oklch(97.9% .021 166.113);
+  --color-emerald-700: oklch(90.5% .093 164.15);
+  --color-emerald-800: oklch(97.9% .021 166.113);
+
+  /* teal: 500 excluded (fixed Panel dot). */
+  --color-teal-50: oklch(43.7% .078 188.216);
+  --color-teal-200: oklch(60% .118 184.704);
+  --color-teal-600: oklch(98.4% .014 180.72);
+  --color-teal-800: oklch(91% .096 180.426);
+
+  /* amber: 500 excluded (fixed Panel dot). */
+  --color-amber-50: oklch(47.3% .137 46.201);
+  --color-amber-200: oklch(55.5% .163 48.998);
+  --color-amber-300: oklch(66.6% .179 58.318);
+  --color-amber-600: oklch(98.7% .022 95.277);
+  --color-amber-700: oklch(92.4% .12 95.746);
+  --color-amber-800: oklch(98.7% .022 95.277);
+
+  /* violet: 500 excluded (fixed Panel dot). 600 IS inverted here — its two
+     solid-fill uses (NodePhaseTrack badge, CallStack gradient stop) were
+     switched to a literal arbitrary color so this is safe. */
+  --color-violet-50: oklch(43.2% .232 292.759);
+  --color-violet-200: oklch(49.1% .27 292.581);
+  --color-violet-300: oklch(54.1% .281 293.009);
+  --color-violet-600: oklch(89.4% .057 293.283);
+  --color-violet-700: oklch(96.9% .016 293.756);
+  --color-violet-800: oklch(89.4% .057 293.283);
+
+  /* sky: 400/500 excluded (MicrotaskHub's fixed pulse flash, dot, and its
+     own identity border). */
+  --color-sky-50: oklch(44.3% .11 240.79);
+  --color-sky-100: oklch(50% .134 242.749);
+  --color-sky-200: oklch(58.8% .158 241.966);
+  --color-sky-600: oklch(97.7% .013 236.62);
+  --color-sky-700: oklch(90.1% .058 230.902);
+  --color-sky-800: oklch(97.7% .013 236.62);
+
+  /* red: error banners only. */
+  --color-red-50: oklch(50.5% .213 27.518);
+  --color-red-200: oklch(58% .19 27.5);
+  --color-red-700: oklch(97.1% .013 17.38);
 }
 
 ::-webkit-scrollbar {

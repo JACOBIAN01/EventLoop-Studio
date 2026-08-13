@@ -256,7 +256,7 @@ export function NodePhaseTrack({
                   ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                   : isIdlePrepareChip
                     ? 'border-slate-100 bg-slate-50 text-slate-300'
-                    : 'border-slate-200 bg-white text-slate-500'
+                    : 'border-slate-200 bg-surface text-slate-500'
               }`}
             >
               {isActive && (
@@ -267,14 +267,17 @@ export function NodePhaseTrack({
                 />
               )}
               {items.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-violet-600 px-1 text-[8px] font-bold text-white">
+                // Literal violet-600 value, not the bg-violet-600 class: that variable is
+                // inverted for dark mode elsewhere (preview text, status labels), but this
+                // badge must stay a fixed vivid violet in both themes.
+                <span className="absolute -top-1.5 -right-1.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[oklch(54.1%_.281_293.009)] px-1 text-[8px] font-bold text-white">
                   {items.length}
                 </span>
               )}
               <div className="flex items-center gap-1">
                 <span
                   className={`flex h-5 w-5 flex-none items-center justify-center rounded-full text-[9px] font-bold ${
-                    isActive ? 'bg-white/70' : 'bg-slate-100 text-slate-400'
+                    isActive ? 'bg-surface/70' : 'bg-slate-100 text-slate-400'
                   }`}
                 >
                   {num}

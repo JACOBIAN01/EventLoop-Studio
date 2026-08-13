@@ -41,14 +41,14 @@ function PriorityRow({ index, label, active, activeClass }: PriorityRowProps) {
   return (
     <motion.div
       className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] font-medium ${
-        active ? activeClass : 'border-slate-200 bg-white text-slate-400'
+        active ? activeClass : 'border-slate-200 bg-surface text-slate-400'
       }`}
       animate={active ? { scale: [1, 1.03, 1] } : { scale: 1 }}
       transition={active ? { duration: 0.45, ease: 'easeOut' } : { duration: 0.15 }}
     >
       <span
         className={`flex h-4 w-4 flex-none items-center justify-center rounded-full text-[9px] font-bold ${
-          active ? 'bg-white/60' : 'bg-slate-100 text-slate-400'
+          active ? 'bg-surface/60' : 'bg-slate-100 text-slate-400'
         }`}
       >
         {index}

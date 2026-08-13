@@ -11,7 +11,7 @@ export interface ControlsProps {
 const SPEEDS: Speed[] = [0.5, 1, 2, 4];
 
 const iconBtn =
-  'flex h-8 w-9 flex-none items-center justify-center rounded-md border border-slate-300 bg-white text-sm text-slate-600 shadow-sm transition-colors hover:enabled:border-indigo-300 hover:enabled:bg-indigo-50 hover:enabled:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40';
+  'flex h-8 w-9 flex-none items-center justify-center rounded-md border border-slate-300 bg-surface text-sm text-slate-600 shadow-sm transition-colors hover:enabled:border-indigo-300 hover:enabled:bg-indigo-50 hover:enabled:text-indigo-700 disabled:cursor-not-allowed disabled:opacity-40';
 
 export function Controls({ playback, stepCount, steps }: ControlsProps) {
   const { currentStepIndex, isPlaying, speed, play, pause, next, previous, restart, setSpeed, seek } = playback;
@@ -36,9 +36,12 @@ export function Controls({ playback, stepCount, steps }: ControlsProps) {
         >
           ⏮
         </button>
+        {/* hover uses indigo-700's literal value, not the bg-indigo-700 class: that variable is
+            inverted for dark mode elsewhere (chip/caption text), but this button must stay a
+            fixed vivid indigo in both themes. */}
         <button
           type="button"
-          className="flex h-8 min-w-24 flex-none items-center justify-center rounded-md bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:enabled:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-8 min-w-24 flex-none items-center justify-center rounded-md bg-indigo-600 px-3 text-sm font-semibold text-white shadow-sm transition-colors hover:enabled:bg-[oklch(45.7%_.24_277.023)] disabled:cursor-not-allowed disabled:opacity-40"
           onClick={isPlaying ? pause : play}
           disabled={stepCount === 0}
           title={isPlaying ? 'Pause' : 'Play'}
@@ -61,7 +64,7 @@ export function Controls({ playback, stepCount, steps }: ControlsProps) {
               className={
                 s === speed
                   ? 'bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white'
-                  : 'bg-white px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50'
+                  : 'bg-surface px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50'
               }
               onClick={() => setSpeed(s)}
             >

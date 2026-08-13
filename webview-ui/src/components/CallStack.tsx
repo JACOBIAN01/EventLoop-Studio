@@ -42,7 +42,10 @@ export function CallStack({ frames }: CallStackProps) {
               transition={{ type: 'spring', stiffness: 480, damping: 34, mass: 0.7 }}
               className={
                 isTop
-                  ? 'rounded-lg border border-indigo-600 bg-linear-to-r from-indigo-600 to-violet-600 px-3 py-2 font-mono text-xs font-semibold text-white shadow-md shadow-indigo-500/20'
+                  // to-[...] uses violet-600's literal value, not the class: that variable is
+                  // inverted for dark mode elsewhere (status labels, chip text), but this
+                  // gradient must stay fixed vivid indigo->violet in both themes.
+                  ? 'rounded-lg border border-indigo-600 bg-linear-to-r from-indigo-600 to-[oklch(54.1%_.281_293.009)] px-3 py-2 font-mono text-xs font-semibold text-white shadow-md shadow-indigo-500/20'
                   : 'rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 font-mono text-xs text-indigo-700'
               }
             >

@@ -15,6 +15,7 @@ import { Panel } from './components/Panel';
 import { CaptionBar } from './components/CaptionBar';
 
 export type EventLoopMode = 'browser' | 'node';
+export type Theme = 'light' | 'dark';
 
 /** The subset of the VS Code webview API we need — persisting a preference and messaging the host. */
 export interface WebviewStateApi {
@@ -329,6 +330,13 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
     });
   };
 
+  const [theme, setTheme] = useState<Theme>(() => vscodeApi?.getState()?.theme ?? 'light');
+
+  const setThemeAndPersist = (next: Theme) => {
+    setTheme(next);
+    vscodeApi?.setState({ ...(vscodeApi.getState() ?? {}), theme: next });
+  };
+
   // Derived from the trace itself, not tracked separately — the currently-displayed mode is
   // exactly whatever mode the current trace was actually recorded under, never a locally-guessed
   // value that could drift out of sync while a re-record is in flight.
@@ -349,7 +357,10 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
 
   if (!trace) {
     return (
-      <div className="relative flex h-screen w-screen flex-col items-center justify-center gap-3 bg-slate-50 text-slate-600">
+      <div
+        data-theme={theme}
+        className="relative flex h-screen w-screen flex-col items-center justify-center gap-3 bg-slate-50 text-slate-600"
+      >
         {hostError && (
           <div className="absolute inset-x-0 top-0 border-b border-red-200 bg-red-50 px-4 py-2 text-center text-xs text-red-700">
             {hostError}
@@ -364,10 +375,10 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
 
   return (
     <LayoutGroup>
-      <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-50 text-slate-700">
-        <header className="flex flex-none items-center gap-3 border-b border-slate-200 bg-white px-4 py-2.5">
+      <div data-theme={theme} className="flex h-screen w-screen flex-col overflow-hidden bg-slate-50 text-slate-700">
+        <header className="flex flex-none items-center gap-3 border-b border-slate-200 bg-surface px-4 py-2.5">
           <span className="h-4 w-1 flex-none rounded-full bg-indigo-600" aria-hidden="true" />
-          <span className="text-[13px] font-semibold tracking-tight text-slate-900">EventLoop Studio</span>
+          <span className="text-[13px] font-semibold tracking-tight text-heading">EventLoop Studio</span>
           <span className="h-3.5 w-px flex-none bg-slate-200" aria-hidden="true" />
           <span className="truncate font-mono text-xs text-slate-500">{trace.fileName}</span>
 
@@ -378,7 +389,7 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
               aria-pressed={activeMode === 'browser'}
               title="Model the browser's event loop: Web APIs, Microtask Queue, Macrotask Queue"
               className={`rounded-[5px] px-2 py-1 transition-colors ${
-                activeMode === 'browser' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                activeMode === 'browser' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Browser
@@ -389,10 +400,35 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
               aria-pressed={activeMode === 'node'}
               title="Model the real Node.js event loop: all six libuv phases, plus process.nextTick"
               className={`rounded-[5px] px-2 py-1 transition-colors ${
-                activeMode === 'node' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                activeMode === 'node' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
               }`}
             >
               Node.js
+            </button>
+          </div>
+
+          <div className="flex flex-none items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
+            <button
+              type="button"
+              onClick={() => setThemeAndPersist('light')}
+              aria-pressed={theme === 'light'}
+              title="Light theme"
+              className={`rounded-[5px] px-2 py-1 transition-colors ${
+                theme === 'light' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Light
+            </button>
+            <button
+              type="button"
+              onClick={() => setThemeAndPersist('dark')}
+              aria-pressed={theme === 'dark'}
+              title="Dark theme"
+              className={`rounded-[5px] px-2 py-1 transition-colors ${
+                theme === 'dark' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Dark
             </button>
           </div>
 
@@ -546,7 +582,7 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
           )}
         </div>
 
-        <footer className="flex-none border-t border-slate-200 bg-white px-4 py-2.5 shadow-[0_-1px_2px_rgba(0,0,0,0.03)]">
+        <footer className="flex-none border-t border-slate-200 bg-surface px-4 py-2.5 shadow-[0_-1px_2px_rgba(0,0,0,0.03)]">
           <Controls playback={playback} stepCount={steps.length} steps={steps} />
         </footer>
       </div>

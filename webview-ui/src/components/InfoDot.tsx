@@ -18,7 +18,7 @@ export function InfoDot({ label, text }: InfoDotProps) {
       >
         i
       </span>
-      <div className="invisible absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2.5 text-[11px] font-normal normal-case leading-snug tracking-normal text-slate-600 opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+      <div className="invisible absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-md border border-slate-200 bg-surface p-2.5 text-[11px] font-normal normal-case leading-snug tracking-normal text-slate-600 opacity-0 shadow-lg transition-opacity duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
         {text}
       </div>
     </div>

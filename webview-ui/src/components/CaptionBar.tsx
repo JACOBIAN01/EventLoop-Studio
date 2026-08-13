@@ -18,13 +18,13 @@ export function CaptionBar({ caption, captionsEnabled, onToggle }: CaptionBarPro
   const visible = caption !== null && (captionsEnabled || caption.tier === 'rule');
 
   return (
-    <div className="flex flex-none items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+    <div className="flex flex-none items-center gap-2 border-b border-slate-200 bg-surface px-4 py-2">
       <button
         type="button"
         onClick={onToggle}
         aria-pressed={captionsEnabled}
         title="Toggle EventLoop Guide"
-        className="flex flex-none items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+        className="flex flex-none items-center gap-1.5 rounded-md border border-slate-200 bg-surface px-2 py-1 text-[11px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
       >
         <span
           className={`h-1.5 w-1.5 flex-none rounded-full ${captionsEnabled ? 'bg-indigo-600' : 'bg-slate-300'}`}

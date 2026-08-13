@@ -46,7 +46,7 @@ export function Panel({
   return (
     <div
       data-panel={title}
-      className={`flex min-h-0 flex-col rounded-md border border-slate-200 bg-white p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className ?? ''}`}
+      className={`flex min-h-0 flex-col rounded-md border border-slate-200 bg-surface p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${className ?? ''}`}
     >
       <div className="mb-2 flex flex-none items-center gap-1.5">
         <span className={`h-1.5 w-1.5 flex-none rounded-full ${ACCENT[accent]}`} aria-hidden="true" />

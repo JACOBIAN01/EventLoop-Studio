@@ -19,7 +19,7 @@ export function SourceCode({ sourceCode, currentLine }: SourceCodeProps) {
   }, [currentLine]);
 
   return (
-    <div className="h-full overflow-y-auto rounded-lg bg-white">
+    <div className="h-full overflow-y-auto rounded-lg bg-surface">
       <pre className="relative m-0 font-mono text-[12.5px]">
         <code className="relative block">
           {currentLine !== null && (
@@ -40,7 +40,7 @@ export function SourceCode({ sourceCode, currentLine }: SourceCodeProps) {
                 className="relative flex h-5.5 items-center whitespace-pre px-2 leading-5.5"
               >
                 <span className="mr-3.5 w-8 flex-none select-none text-right text-slate-400">{lineNumber}</span>
-                <span className={isActive ? 'font-medium text-slate-900' : 'text-slate-500'}>{text.length > 0 ? text : ' '}</span>
+                <span className={isActive ? 'font-medium text-heading' : 'text-slate-500'}>{text.length > 0 ? text : ' '}</span>
               </div>
             );
           })}
