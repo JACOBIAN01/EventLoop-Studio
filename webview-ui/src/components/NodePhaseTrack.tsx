@@ -257,7 +257,7 @@ export function NodePhaseTrack({
             <div
               key={def.phase}
               style={{ gridColumn: pos.col, gridRow: pos.row }}
-              className={`relative flex h-full min-h-0 min-w-32 flex-col justify-center gap-1 overflow-hidden rounded-lg border px-3 py-2.5 text-[13px] font-semibold ${
+              className={`relative flex h-full min-h-0 min-w-32 flex-col justify-center gap-1 rounded-lg border px-3 py-2.5 text-[13px] font-semibold ${
                 isActive
                   ? 'border-indigo-300 bg-indigo-50 text-indigo-700'
                   : isIdlePrepareChip
