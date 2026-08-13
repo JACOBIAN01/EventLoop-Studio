@@ -253,7 +253,7 @@ export async function recordTrace(
       filename: fileName || 'eventloop-studio://source.js',
     });
   } catch (err: any) {
-    errorMessage = `Runtime error: ${err?.message ?? String(err)}`;
+    errorMessage = explainRuntimeError(err, mode);
     push('console-log', { label: 'console.error', detail: errorMessage });
   }
   push('pop-stack', { label: 'global()' });
@@ -420,6 +420,38 @@ export async function recordTrace(
     truncated: truncated || undefined,
     error: errorMessage,
   };
+}
+
+/** setImmediate is intentionally 'browser'-mode only elsewhere in this file, listed here too so a script that only uses it (no process.nextTick) still gets the same actionable hint. */
+const NODE_ONLY_GLOBALS = ['process', 'setImmediate'];
+
+/**
+ * Turns a bare "X is not defined" into something a script author can actually act on, instead
+ * of a generic runtime error. Two specific, common cases:
+ *  - A Node-only global used while in 'browser' mode: real browsers don't have it either, so
+ *    the fix is switching modes, not a bug in the sandbox.
+ *  - `require`: never exposed in either mode, on purpose — real module loading would hand a
+ *    script full filesystem/network access, well beyond what a visualization tool should grant
+ *    by default. Points at the safe, curated equivalents this tool already provides instead.
+ */
+function explainRuntimeError(err: any, mode: 'browser' | 'node'): string {
+  const message = err?.message ?? String(err);
+  const match = /^(\w+) is not defined$/.exec(message);
+  if (match) {
+    const name = match[1];
+    if (name === 'require') {
+      return (
+        `Runtime error: ${message} — this sandbox never exposes require or Node's module system, ` +
+        `in either mode, real module loading would give a script full filesystem/network access. ` +
+        `Use the built-in readFileReal(), simulateSystemCallback(), or createHandle() instead, ` +
+        `they cover the same real phases safely.`
+      );
+    }
+    if (mode === 'browser' && NODE_ONLY_GLOBALS.includes(name)) {
+      return `Runtime error: ${message} — this script uses a Node.js-specific API. Switch to Node.js mode (top-right toggle) and try again.`;
+    }
+  }
+  return `Runtime error: ${message}`;
 }
 
 function formatValue(value: unknown): string {
