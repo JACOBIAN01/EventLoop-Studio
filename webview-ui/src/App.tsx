@@ -8,7 +8,7 @@ import { CallStack } from './components/CallStack';
 import { Heap } from './components/Heap';
 import { QueueList } from './components/QueueList';
 import { EventLoop, LoopStatus, STATUS_COPY, STATUS_COLOR } from './components/EventLoop';
-import { NodeEventLoopRing } from './components/NodeEventLoopRing';
+import { NodePhaseTrack } from './components/NodePhaseTrack';
 import { ConsolePanel } from './components/ConsolePanel';
 import { Controls } from './components/Controls';
 import { Panel } from './components/Panel';
@@ -421,24 +421,24 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
             </Panel>
           </section>
 
-          <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.3fr_1.1fr_1.1fr] gap-3">
-            <Panel
-              title="Call Stack"
-              accent="indigo"
-              bodyClassName="overflow-y-auto"
-              description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
-            >
-              <CallStack frames={derived.callStack} />
-            </Panel>
-            <Panel
-              title="Heap"
-              accent="emerald"
-              bodyClassName="overflow-y-auto"
-              description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
-            >
-              <Heap entries={derived.heap} />
-            </Panel>
-            {activeMode === 'browser' ? (
+          {activeMode === 'browser' ? (
+            <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.3fr_1.1fr_1.1fr] gap-3">
+              <Panel
+                title="Call Stack"
+                accent="indigo"
+                bodyClassName="overflow-y-auto"
+                description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
+              >
+                <CallStack frames={derived.callStack} />
+              </Panel>
+              <Panel
+                title="Heap"
+                accent="emerald"
+                bodyClassName="overflow-y-auto"
+                description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
+              >
+                <Heap entries={derived.heap} />
+              </Panel>
               <Panel
                 title="Event Loop"
                 accent="slate"
@@ -452,60 +452,34 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
               >
                 <EventLoop status={derived.loopStatus} stackEmpty={derived.callStack.length === 0} />
               </Panel>
-            ) : (
               <Panel
-                title="Event Loop"
-                accent="slate"
-                description="Cycles through six fixed phases, always in this order, every iteration. Not every script uses all six."
-                badge={
-                  <span className="text-[11px] font-semibold text-indigo-700">
-                    {derived.currentPhase ? PHASE_LABEL[derived.currentPhase] : 'Idle'}
-                  </span>
-                }
+                title="Web APIs"
+                accent="teal"
+                bodyClassName="overflow-y-auto"
+                description="Browser or Node features, like setTimeout, that run outside the JS engine. That's why your code doesn't have to wait for them."
               >
-                <NodeEventLoopRing
-                  currentPhase={derived.currentPhase}
-                  timers={derived.macrotaskQueueTimers}
-                  pendingCallbacks={derived.pendingSystemCallbacks}
-                  poll={derived.pendingIO}
-                  check={derived.pendingImmediates}
-                  closeCallbacks={derived.pendingCloseCallbacks}
+                <QueueList
+                  items={derived.webApiTimers}
+                  emptyText="no pending timers"
+                  color="teal"
+                  direction="col"
+                  initialOffset={{ x: -36, y: -22, rotate: -8 }}
                 />
               </Panel>
-            )}
-            <Panel
-              title={activeMode === 'node' ? 'Pending Timers' : 'Web APIs'}
-              accent="teal"
-              bodyClassName="overflow-y-auto"
-              description={
-                activeMode === 'node'
-                  ? "setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase."
-                  : 'Browser or Node features, like setTimeout, that run outside the JS engine. That\'s why your code doesn\'t have to wait for them.'
-              }
-            >
-              <QueueList
-                items={derived.webApiTimers}
-                emptyText="no pending timers"
-                color="teal"
-                direction="col"
-                initialOffset={{ x: -36, y: -22, rotate: -8 }}
-              />
-            </Panel>
-            <Panel
-              title="Microtask Queue"
-              accent="amber"
-              bodyClassName="overflow-y-auto"
-              description="Holds Promise and async/await callbacks. Always fully drained before the next macrotask runs, no matter how short that macrotask's delay is."
-            >
-              <QueueList
-                items={derived.pendingMicrotasks}
-                emptyText="no microtasks queued"
-                color="amber"
-                showNextBadge
-                initialOffset={{ y: -34, rotate: 6 }}
-              />
-            </Panel>
-            {activeMode === 'browser' ? (
+              <Panel
+                title="Microtask Queue"
+                accent="amber"
+                bodyClassName="overflow-y-auto"
+                description="Holds Promise and async/await callbacks. Always fully drained before the next macrotask runs, no matter how short that macrotask's delay is."
+              >
+                <QueueList
+                  items={derived.pendingMicrotasks}
+                  emptyText="no microtasks queued"
+                  color="amber"
+                  showNextBadge
+                  initialOffset={{ y: -34, rotate: 6 }}
+                />
+              </Panel>
               <Panel
                 title="Macrotask Queue"
                 accent="violet"
@@ -520,23 +494,56 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
                   initialOffset={{ x: -34, y: -34, rotate: -6 }}
                 />
               </Panel>
-            ) : (
-              <Panel
-                title="nextTick Queue"
-                accent="sky"
-                bodyClassName="overflow-y-auto"
-                description="process.nextTick callbacks. Always drains completely before the Microtask Queue gets a turn, every single time, no exceptions."
-              >
-                <QueueList
-                  items={derived.pendingNextTicks}
-                  emptyText="no nextTick callbacks queued"
-                  color="sky"
-                  showNextBadge
-                  initialOffset={{ x: -34, y: -34, rotate: -6 }}
-                />
-              </Panel>
-            )}
-          </section>
+            </section>
+          ) : (
+            <section className="flex h-full min-h-0 flex-col gap-3">
+              <div className="grid h-32 flex-none grid-cols-2 gap-3">
+                <Panel
+                  title="Call Stack"
+                  accent="indigo"
+                  bodyClassName="overflow-y-auto"
+                  description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
+                >
+                  <CallStack frames={derived.callStack} />
+                </Panel>
+                <Panel
+                  title="Heap"
+                  accent="emerald"
+                  bodyClassName="overflow-y-auto"
+                  description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
+                >
+                  <Heap entries={derived.heap} />
+                </Panel>
+              </div>
+              <div className="h-24 flex-none">
+                <Panel
+                  title="Pending Timers"
+                  accent="teal"
+                  bodyClassName="overflow-y-auto"
+                  description="setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase below. nextTick and Microtask Queue moved into the Microtask Hub below, they're cross-cutting, not phases, so they sit inside the loop they drain between, not off to the side."
+                >
+                  <QueueList
+                    items={derived.webApiTimers}
+                    emptyText="no pending timers"
+                    color="teal"
+                    direction="col"
+                    initialOffset={{ y: -24 }}
+                  />
+                </Panel>
+              </div>
+              <NodePhaseTrack
+                currentPhase={derived.currentPhase}
+                timers={derived.macrotaskQueueTimers}
+                pendingCallbacks={derived.pendingSystemCallbacks}
+                poll={derived.pendingIO}
+                check={derived.pendingImmediates}
+                closeCallbacks={derived.pendingCloseCallbacks}
+                pendingNextTicks={derived.pendingNextTicks}
+                pendingMicrotasks={derived.pendingMicrotasks}
+                lastDrainStepId={derived.lastDrainStepId}
+              />
+            </section>
+          )}
         </div>
 
         <footer className="flex-none border-t border-slate-200 bg-white px-4 py-2.5 shadow-[0_-1px_2px_rgba(0,0,0,0.03)]">
