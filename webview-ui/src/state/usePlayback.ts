@@ -38,6 +38,19 @@ export function usePlayback(stepCount: number): PlaybackState {
 
   const lastIndex = stepCount - 1;
 
+  // A brand-new trace (often shorter) can arrive while scrubbed deep into a previous one, e.g.
+  // switching Browser/Node.js modes, or just re-running Visualize after editing the file down
+  // to fewer steps. Clamp at read-time so a stale index from before this trace loaded can never
+  // reach computeStateAtStep out of bounds, that was crashing the whole render tree (blank
+  // webview) instead of just clipping the scrubber visually.
+  const safeIndex = Math.min(currentStepIndex, lastIndex);
+
+  // Also correct the underlying stored value, not just this derived read, so relative moves
+  // like previous() step from a valid baseline instead of the stale raw number.
+  useEffect(() => {
+    setCurrentStepIndex((idx) => Math.min(idx, lastIndex));
+  }, [lastIndex]);
+
   const pause = useCallback(() => {
     setIsPlaying(false);
   }, []);
@@ -100,7 +113,7 @@ export function usePlayback(stepCount: number): PlaybackState {
   useEffect(() => clearTimer, [clearTimer]);
 
   return {
-    currentStepIndex,
+    currentStepIndex: safeIndex,
     isPlaying,
     speed,
     play,

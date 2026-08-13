@@ -106,9 +106,15 @@ function removeScheduledItem<T extends PendingItem>(items: T[], step: ExecutionS
  * keeps this trivially correct when scrubbing/seeking around the timeline.
  */
 export function computeStateAtStep(steps: ExecutionStep[], index: number): DerivedState {
-  if (index < 0) {
+  // Defensive clamp: a stale index from a previous (often longer) trace should never reach the
+  // fold loop below out of bounds, that's what previously crashed the whole render tree when
+  // switching to a shorter trace mid-scrub. usePlayback already clamps at the source; this is
+  // the second, independent guard at the boundary this function actually depends on.
+  const safeIndex = Math.min(index, steps.length - 1);
+  if (safeIndex < 0) {
     return EMPTY_STATE;
   }
+  index = safeIndex;
 
   const callStack: StackFrame[] = [];
   const heap: Record<string, string> = {};
