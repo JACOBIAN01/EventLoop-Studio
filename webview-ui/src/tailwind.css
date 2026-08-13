@@ -53,7 +53,11 @@ body {
   --color-heading: oklch(20.8% .042 265.755);
 }
 
-:root[data-theme="dark"] {
+/* Not `:root[data-theme="dark"]`: :root only ever matches the document's actual
+   root element (<html>). The toggle sets data-theme on App's own wrapper <div>,
+   so the selector needs to match that div directly for the override to apply —
+   custom properties still cascade correctly to every descendant from there. */
+[data-theme="dark"] {
   --color-surface: oklch(27.9% .041 260.031);
   --color-heading: oklch(96.8% .007 247.896);
 
