@@ -6,7 +6,7 @@ import { buildAstSummary } from './parser/astSummary';
 
 export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
-    vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context, 'browser')),
+    vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context)),
     vscode.commands.registerCommand(COMMANDS.showAst, () => showAstSummary()),
     vscode.commands.registerCommand(COMMANDS.helloDeveloper, () => {
       vscode.window.showInformationMessage('Hello Subhadeep');
@@ -14,19 +14,38 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-async function visualizeEventLoop(context: vscode.ExtensionContext, mode: 'browser' | 'node') {
+/** Whichever file was last successfully visualized, so the Browser/Node.js toggle can re-run it. */
+let lastVisualizedDocument: vscode.TextDocument | undefined;
+
+/**
+ * `modeOverride` is only passed when the webview itself asks for a specific mode (the
+ * Browser/Node.js toggle). Re-running the command with no override, e.g. after editing the
+ * file, keeps whatever mode the panel is already showing instead of resetting to 'browser'.
+ */
+async function visualizeEventLoop(context: vscode.ExtensionContext, modeOverride?: 'browser' | 'node') {
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'javascript') {
+  let document: vscode.TextDocument;
+
+  if (editor && editor.document.languageId === 'javascript') {
+    document = editor.document;
+  } else if (modeOverride && lastVisualizedDocument) {
+    // The toggle lives inside the webview panel, so clicking it moves focus there — by the
+    // time this runs, activeTextEditor is undefined (no text editor has focus), not the file
+    // being visualized. Fall back to whichever file this panel is already showing.
+    document = lastVisualizedDocument;
+  } else {
     vscode.window.showWarningMessage(
       'Open a JavaScript file first, then run "Visualize Event Loop".',
     );
     return;
   }
 
+  lastVisualizedDocument = document;
   const panel = EventLoopPanel.createOrShow(context.extensionUri, (newMode) =>
     visualizeEventLoop(context, newMode),
   );
-  const trace = await recordTrace(editor.document.getText(), editor.document.fileName, mode);
+  const mode = modeOverride ?? panel.currentMode;
+  const trace = await recordTrace(document.getText(), document.fileName, mode);
   panel.postTrace(trace);
 }
 

@@ -9,6 +9,12 @@ export class EventLoopPanel {
   private readonly disposables: vscode.Disposable[] = [];
   private lastTrace: Trace | undefined;
   private readonly onRequestTrace: (mode: 'browser' | 'node') => void;
+  /**
+   * Whatever mode the last recorded trace actually used. Lets re-running "Visualize Event Loop"
+   * on an already-open panel (e.g. after editing the file) preserve the user's current mode,
+   * rather than always snapping back to 'browser'.
+   */
+  currentMode: 'browser' | 'node' = 'browser';
 
   static createOrShow(
     extensionUri: vscode.Uri,
@@ -66,6 +72,7 @@ export class EventLoopPanel {
 
   postTrace(trace: Trace): void {
     this.lastTrace = trace;
+    this.currentMode = trace.mode;
     this.send({ type: 'trace', payload: trace });
   }
 
