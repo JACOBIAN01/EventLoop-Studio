@@ -123,10 +123,13 @@ body {
   --color-sky-700: oklch(90.1% .058 230.902);
   --color-sky-800: oklch(97.7% .013 236.62);
 
-  /* red: error banners only. */
-  --color-red-50: oklch(50.5% .213 27.518);
-  --color-red-200: oklch(58% .19 27.5);
-  --color-red-700: oklch(97.1% .013 17.38);
+  /* red: error banners only. Deliberately NOT a mirror-swap with red-700's original
+     (that's fully-saturated, chroma .213 — reads as a bold alert-red fill, not a
+     soft tinted background). Hand-picked low-chroma values instead, so the banner
+     stays a subdued dark wash. */
+  --color-red-50: oklch(28% .045 25);
+  --color-red-200: oklch(38% .09 25);
+  --color-red-700: oklch(85% .07 20);
 }
 
 ::-webkit-scrollbar {
