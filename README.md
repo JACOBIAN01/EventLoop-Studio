@@ -35,6 +35,9 @@ Made for JavaScript developers, students, and anyone preparing for an interview 
   - [EventLoop Guide (narration)](#eventloop-guide-narration)
   - [Info tooltips](#info-tooltips)
   - [Show Parsed AST (JSON)](#show-parsed-ast-json)
+  - [Browser vs. Node.js mode](#browser-vs-nodejs-mode)
+  - [Light / Dark theme](#light--dark-theme)
+  - [Resizable panels](#resizable-panels)
 - [How It Works: Internal Architecture](#how-it-works-internal-architecture)
   - [The recording pipeline](#the-recording-pipeline)
   - [Sequence: what happens when you click Visualize](#sequence-what-happens-when-you-click-visualize)
@@ -176,6 +179,30 @@ Every core panel (Call Stack, Heap, Web APIs, Microtask Queue, Macrotask Queue, 
 
 A separate, simpler command that parses the active file and shows a flat JSON summary of what was found: variables, functions, calls, `console.log` sites, timers, and promise usage. This exists as a standalone window into how the AST parsing layer sees your code, independent of the full execution recorder.
 
+### Browser vs. Node.js mode
+
+A toggle at the top switches the whole visualization between two different event loop models:
+
+- **Browser mode** (the default): Web APIs, Microtask Queue, Macrotask Queue, the panels described above.
+- **Node.js mode**: the real Node.js event loop, all six libuv phases in their real fixed order (**Timers → Pending Callbacks → Idle/Prepare → Poll → Check → Close Callbacks**), drawn as a ring with a single "you are here" pointer and per-phase queue-depth badges.
+
+Two things in Node.js mode are genuinely real, not simulated:
+
+- **Poll is a real `fs.readFile`**, dispatched to Node's actual libuv thread pool and raced against any other in-flight reads with `Promise.race`. Multiple pending I/O operations complete in whatever order the real thread pool actually finishes them in, never an order this tool decides in advance.
+- **Check correctly drains nested `setImmediate` calls in the same pass.** A `setImmediate` scheduled from inside another `setImmediate` callback runs in that same Check-phase pass, not the next loop iteration, matching real Node's behavior exactly (verified against real Node terminal output for the same script).
+
+`process.nextTick` and the Promise/microtask queue are cross-cutting, not phases of their own, so they're drawn once as a central **Microtask Hub** inside the ring rather than off to the side. The hub visibly flashes on every real drain event, matching how often it actually drains (between *every* callback), not once per phase, which is the detail most explanations of this get wrong.
+
+Re-running "Visualize Event Loop" on an already-open panel preserves whichever mode you were in.
+
+### Light / Dark theme
+
+A theme toggle next to the mode switch. The preference is remembered across sessions, the same way the EventLoop Guide's on/off state is.
+
+### Resizable panels
+
+Every panel — Source, Console, Call Stack, Heap, Event Loop, Web APIs, Microtask/Macrotask Queue, and the whole Node-mode phase diagram as one block — can be resized by dragging the divider between panels. Sizes persist across reloads. A **Reset Layout** button in the header restores every panel to its default size in one click.
+
 ---
 
 ## How It Works: Internal Architecture
@@ -226,10 +253,12 @@ EventLoop Studio/
 │   ├── src/
 │   │   ├── main.tsx                Webview entry point, message bridge to the host
 │   │   ├── App.tsx                 Layout + computeStateAtStep (the core derivation logic)
-│   │   ├── components/             One component per panel (CallStack, Heap, WebApis, ...)
+│   │   ├── components/             One component per panel (CallStack, Heap, QueueList, ...)
+│   │   │   └── NodePhaseTrack.tsx   Node mode's 6-phase ring + central Microtask Hub
 │   │   ├── lib/captions.ts         The two-tier narration templates
 │   │   ├── state/usePlayback.ts    Play/pause/speed/scrubber state machine
-│   │   └── tailwind.css            Theme
+│   │   ├── state/usePanelSizes.ts  Resizable-panel layout persistence + reset
+│   │   └── tailwind.css            Light/Dark theme tokens
 │   ├── preview.html / preview-main.tsx   Standalone browser harness for UI development
 │   └── mock-trace.json             Hand-authored fixture trace for the preview harness
 │
@@ -261,7 +290,9 @@ EventLoop Studio/
 | **The Heap re-snapshots at every statement boundary and function exit, wrapped in `try`/`catch`** | Reading a variable that isn't actually in scope at a given point would throw; wrapping each read means out-of-scope names are silently skipped rather than crashing the recording. |
 | **Captions are deterministic hand-written templates, not LLM-generated** | Wrong explanations are actively harmful in a teaching tool. A small, fixed template set can be verified correct once, runs instantly, and needs no network access. |
 | **Tailwind CSS compiled via its standalone CLI, not through esbuild's own CSS pipeline** | Keeps the two build concerns (JS bundling vs. CSS generation) independent and each replaceable on its own. |
-| **The extension commits to one consistent light theme rather than mirroring the user's VS Code theme** | This is a dedicated visualization tool, not chrome embedded in the editor; a consistent, deliberately designed look reads as more polished than trying to reskin itself per theme. |
+| **Node mode's Poll phase dispatches a genuinely real `fs.readFile` to Node's actual libuv thread pool, instead of a simulated delay** | Everything else in Node mode is an honest in-memory simulation this recorder fully controls, since real timers/system callbacks would force the recorder to wait out real delays. Poll is the one deliberate exception: it's what lets multiple pending reads complete in whatever order the real thread pool actually finishes them in, rather than an order this tool imposes. |
+| **Light/Dark theme overrides Tailwind's own palette CSS variables under a `[data-theme="dark"]` selector, instead of adding `dark:` classes to ~170 individual elements** | Tailwind v4 already compiles every color utility (`bg-slate-50`, `text-indigo-700`, ...) to `var(--color-slate-50)` etc, so redefining those same variables flips virtually the whole app at once. A few shades genuinely serve two different roles (e.g. `white` as both a surface background and fixed badge text) and needed a small dedicated token or a literal hardcoded color instead of an override, but this was still far less invasive than a class-by-class rewrite. |
+| **Resizable panel layout persists via the same `vscodeApi.getState()/setState()` used elsewhere, not the resizing library's own `localStorage`-based mechanism** | Keeps every piece of this extension's persisted state (captions on/off, theme, panel sizes) in one place, the extension's own webview state, rather than splitting it across two different storage mechanisms. |
 
 ---
 
@@ -272,6 +303,8 @@ Being upfront about where this tool takes a shortcut, and why it was a reasonabl
 - **Shadowed variables share one Heap slot.** The Heap is a flat, name-keyed view. If an inner scope declares its own `x` while an outer `x` is also in scope, both are tracked, but the panel shows whichever was most recently touched rather than two independent entries.
 - **Async function call-stack frames are a pedagogical approximation.** In real JS, an `async` function's stack frame is popped at each `await` and re-pushed on resume. This tool's instrumentation marks function-body *boundaries*, not individual suspension points, so a frame can appear to stay "open" slightly longer than the real engine would show it. The console output and event ordering are still exactly correct; only the visual stack depth during an in-flight `await` is simplified.
 - **Line highlighting is statement-granularity, one level into function bodies.** Deeply nested blocks (inside a loop body, for example) don't get their own line markers; the highlight reflects the nearest tracked statement.
+- **`worker_threads` are not modeled in Node.js mode**, on purpose. Real worker thread support would need a second Call Stack/Heap "lane" and cross-thread trace merging, genuinely a separate project rather than an extension of the current single-threaded recorder.
+- **`setTimeout(fn, 0)` vs. `setImmediate` ordering at the very top level of a script is left non-deterministic**, matching real Node: this specific race is genuinely undocumented and can go either way in real Node too, depending on process startup overhead. Inside an I/O callback, `setImmediate` always and correctly wins.
 
 ---
 
