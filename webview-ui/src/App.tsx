@@ -13,6 +13,8 @@ import { ConsolePanel } from './components/ConsolePanel';
 import { Controls } from './components/Controls';
 import { Panel } from './components/Panel';
 import { CaptionBar } from './components/CaptionBar';
+import { Group, Panel as ResizablePanel, Separator } from 'react-resizable-panels';
+import { usePanelSizes } from './state/usePanelSizes';
 
 export type EventLoopMode = 'browser' | 'node';
 export type Theme = 'light' | 'dark';
@@ -316,6 +318,33 @@ export interface AppProps {
   vscodeApi?: WebviewStateApi;
 }
 
+/**
+ * Draggable dividers between panels. The hit area is w-3/h-3 (12px, matching the gap-3 spacing
+ * this layout used before panels became resizable) so the visual rhythm stays the same; a thin
+ * 1px line centered inside it is the only visible trace, brightening on hover.
+ */
+function VSep() {
+  return (
+    <Separator className="group relative w-3 flex-none cursor-col-resize outline-none">
+      <span
+        className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-slate-300 transition-colors group-hover:bg-indigo-400"
+        aria-hidden="true"
+      />
+    </Separator>
+  );
+}
+
+function HSep() {
+  return (
+    <Separator className="group relative h-3 flex-none cursor-row-resize outline-none">
+      <span
+        className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300 transition-colors group-hover:bg-indigo-400"
+        aria-hidden="true"
+      />
+    </Separator>
+  );
+}
+
 export function App({ trace, hostError, vscodeApi }: AppProps) {
   const steps = trace?.steps ?? [];
   const playback = usePlayback(steps.length);
@@ -336,6 +365,8 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
     setTheme(next);
     vscodeApi?.setState({ ...(vscodeApi.getState() ?? {}), theme: next });
   };
+
+  const { getLayout, registerGroupRef, onLayoutChanged, reset: resetLayout } = usePanelSizes(vscodeApi);
 
   // Derived from the trace itself, not tracked separately — the currently-displayed mode is
   // exactly whatever mode the current trace was actually recorded under, never a locally-guessed
@@ -432,6 +463,15 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
             </button>
           </div>
 
+          <button
+            type="button"
+            onClick={resetLayout}
+            title="Restore every panel to its default size"
+            className="flex-none rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-500 transition-colors hover:bg-surface hover:text-slate-700"
+          >
+            Reset Layout
+          </button>
+
           {trace.truncated && (
             <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
               trace truncated
@@ -447,140 +487,264 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
           </div>
         )}
 
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-auto p-3 lg:grid-cols-[1.2fr_1fr] lg:overflow-hidden">
-          <section className="grid min-h-0 grid-rows-[1.4fr_1fr] gap-3">
-            <Panel title="Source" accent="slate" bodyClassName="overflow-hidden">
-              <SourceCode sourceCode={trace.sourceCode} currentLine={derived.currentLine} />
-            </Panel>
-            <Panel title="Console" accent="slate" bodyClassName="overflow-hidden">
-              <ConsolePanel lines={derived.consoleOutput} />
-            </Panel>
-          </section>
+        <Group
+          orientation="horizontal"
+          id="main"
+          defaultLayout={getLayout('main')}
+          onLayoutChanged={onLayoutChanged('main')}
+          groupRef={registerGroupRef('main')}
+          className="min-h-0 flex-1 p-3"
+        >
+          <ResizablePanel id="left" minSize={20}>
+            <Group
+              orientation="vertical"
+              id="leftColumn"
+              defaultLayout={getLayout('leftColumn')}
+              onLayoutChanged={onLayoutChanged('leftColumn')}
+              groupRef={registerGroupRef('leftColumn')}
+              className="h-full"
+            >
+              <ResizablePanel id="source" minSize={15}>
+                <Panel title="Source" accent="slate" bodyClassName="overflow-hidden" className="h-full">
+                  <SourceCode sourceCode={trace.sourceCode} currentLine={derived.currentLine} />
+                </Panel>
+              </ResizablePanel>
+              <HSep />
+              <ResizablePanel id="console" minSize={15}>
+                <Panel title="Console" accent="slate" bodyClassName="overflow-hidden" className="h-full">
+                  <ConsolePanel lines={derived.consoleOutput} />
+                </Panel>
+              </ResizablePanel>
+            </Group>
+          </ResizablePanel>
 
-          {activeMode === 'browser' ? (
-            <section className="grid h-full min-h-0 grid-cols-2 grid-rows-[1.3fr_1.1fr_1.1fr] gap-3">
-              <Panel
-                title="Call Stack"
-                accent="indigo"
-                bodyClassName="overflow-y-auto"
-                description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
+          <VSep />
+
+          <ResizablePanel id="right" minSize={20}>
+            {activeMode === 'browser' ? (
+              <Group
+                orientation="vertical"
+                id="browserRight"
+                defaultLayout={getLayout('browserRight')}
+                onLayoutChanged={onLayoutChanged('browserRight')}
+                groupRef={registerGroupRef('browserRight')}
+                className="h-full"
               >
-                <CallStack frames={derived.callStack} />
-              </Panel>
-              <Panel
-                title="Heap"
-                accent="emerald"
-                bodyClassName="overflow-y-auto"
-                description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
+                <ResizablePanel id="browserRow1" minSize={15}>
+                  <Group
+                    orientation="horizontal"
+                    id="browserRow1"
+                    defaultLayout={getLayout('browserRow1')}
+                    onLayoutChanged={onLayoutChanged('browserRow1')}
+                    groupRef={registerGroupRef('browserRow1')}
+                    className="h-full"
+                  >
+                    <ResizablePanel id="callStack" minSize={15}>
+                      <Panel
+                        title="Call Stack"
+                        accent="indigo"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
+                      >
+                        <CallStack frames={derived.callStack} />
+                      </Panel>
+                    </ResizablePanel>
+                    <VSep />
+                    <ResizablePanel id="heap" minSize={15}>
+                      <Panel
+                        title="Heap"
+                        accent="emerald"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
+                      >
+                        <Heap entries={derived.heap} />
+                      </Panel>
+                    </ResizablePanel>
+                  </Group>
+                </ResizablePanel>
+
+                <HSep />
+
+                <ResizablePanel id="browserRow2" minSize={15}>
+                  <Group
+                    orientation="horizontal"
+                    id="browserRow2"
+                    defaultLayout={getLayout('browserRow2')}
+                    onLayoutChanged={onLayoutChanged('browserRow2')}
+                    groupRef={registerGroupRef('browserRow2')}
+                    className="h-full"
+                  >
+                    <ResizablePanel id="eventLoop" minSize={15}>
+                      <Panel
+                        title="Event Loop"
+                        accent="slate"
+                        className="h-full"
+                        titleClassName={STATUS_COLOR[derived.loopStatus]}
+                        description="Constantly checks whether the Call Stack is empty. If it is, all microtasks run first, then one macrotask is pulled in."
+                        badge={
+                          <span className={`text-[11px] font-semibold ${STATUS_COLOR[derived.loopStatus]}`}>
+                            {STATUS_COPY[derived.loopStatus]}
+                          </span>
+                        }
+                      >
+                        <EventLoop status={derived.loopStatus} stackEmpty={derived.callStack.length === 0} />
+                      </Panel>
+                    </ResizablePanel>
+                    <VSep />
+                    <ResizablePanel id="webApis" minSize={15}>
+                      <Panel
+                        title="Web APIs"
+                        accent="teal"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Browser or Node features, like setTimeout, that run outside the JS engine. That's why your code doesn't have to wait for them."
+                      >
+                        <QueueList
+                          items={derived.webApiTimers}
+                          emptyText="no pending timers"
+                          color="teal"
+                          direction="col"
+                          initialOffset={{ x: -36, y: -22, rotate: -8 }}
+                        />
+                      </Panel>
+                    </ResizablePanel>
+                  </Group>
+                </ResizablePanel>
+
+                <HSep />
+
+                <ResizablePanel id="browserRow3" minSize={15}>
+                  <Group
+                    orientation="horizontal"
+                    id="browserRow3"
+                    defaultLayout={getLayout('browserRow3')}
+                    onLayoutChanged={onLayoutChanged('browserRow3')}
+                    groupRef={registerGroupRef('browserRow3')}
+                    className="h-full"
+                  >
+                    <ResizablePanel id="microtaskQueue" minSize={15}>
+                      <Panel
+                        title="Microtask Queue"
+                        accent="amber"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Holds Promise and async/await callbacks. Always fully drained before the next macrotask runs, no matter how short that macrotask's delay is."
+                      >
+                        <QueueList
+                          items={derived.pendingMicrotasks}
+                          emptyText="no microtasks queued"
+                          color="amber"
+                          showNextBadge
+                          initialOffset={{ y: -34, rotate: 6 }}
+                        />
+                      </Panel>
+                    </ResizablePanel>
+                    <VSep />
+                    <ResizablePanel id="macrotaskQueue" minSize={15}>
+                      <Panel
+                        title="Macrotask Queue"
+                        accent="violet"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Holds callbacks like expired timers. The event loop only pulls one once the Call Stack and Microtask Queue are both completely empty."
+                      >
+                        <QueueList
+                          items={derived.macrotaskQueueTimers}
+                          emptyText="no macrotasks ready"
+                          color="violet"
+                          showNextBadge
+                          initialOffset={{ x: -34, y: -34, rotate: -6 }}
+                        />
+                      </Panel>
+                    </ResizablePanel>
+                  </Group>
+                </ResizablePanel>
+              </Group>
+            ) : (
+              <Group
+                orientation="vertical"
+                id="nodeRight"
+                defaultLayout={getLayout('nodeRight')}
+                onLayoutChanged={onLayoutChanged('nodeRight')}
+                groupRef={registerGroupRef('nodeRight')}
+                className="h-full"
               >
-                <Heap entries={derived.heap} />
-              </Panel>
-              <Panel
-                title="Event Loop"
-                accent="slate"
-                titleClassName={STATUS_COLOR[derived.loopStatus]}
-                description="Constantly checks whether the Call Stack is empty. If it is, all microtasks run first, then one macrotask is pulled in."
-                badge={
-                  <span className={`text-[11px] font-semibold ${STATUS_COLOR[derived.loopStatus]}`}>
-                    {STATUS_COPY[derived.loopStatus]}
-                  </span>
-                }
-              >
-                <EventLoop status={derived.loopStatus} stackEmpty={derived.callStack.length === 0} />
-              </Panel>
-              <Panel
-                title="Web APIs"
-                accent="teal"
-                bodyClassName="overflow-y-auto"
-                description="Browser or Node features, like setTimeout, that run outside the JS engine. That's why your code doesn't have to wait for them."
-              >
-                <QueueList
-                  items={derived.webApiTimers}
-                  emptyText="no pending timers"
-                  color="teal"
-                  direction="col"
-                  initialOffset={{ x: -36, y: -22, rotate: -8 }}
-                />
-              </Panel>
-              <Panel
-                title="Microtask Queue"
-                accent="amber"
-                bodyClassName="overflow-y-auto"
-                description="Holds Promise and async/await callbacks. Always fully drained before the next macrotask runs, no matter how short that macrotask's delay is."
-              >
-                <QueueList
-                  items={derived.pendingMicrotasks}
-                  emptyText="no microtasks queued"
-                  color="amber"
-                  showNextBadge
-                  initialOffset={{ y: -34, rotate: 6 }}
-                />
-              </Panel>
-              <Panel
-                title="Macrotask Queue"
-                accent="violet"
-                bodyClassName="overflow-y-auto"
-                description="Holds callbacks like expired timers. The event loop only pulls one once the Call Stack and Microtask Queue are both completely empty."
-              >
-                <QueueList
-                  items={derived.macrotaskQueueTimers}
-                  emptyText="no macrotasks ready"
-                  color="violet"
-                  showNextBadge
-                  initialOffset={{ x: -34, y: -34, rotate: -6 }}
-                />
-              </Panel>
-            </section>
-          ) : (
-            <section className="flex h-full min-h-0 flex-col gap-3">
-              <div className="grid h-32 flex-none grid-cols-2 gap-3">
-                <Panel
-                  title="Call Stack"
-                  accent="indigo"
-                  bodyClassName="overflow-y-auto"
-                  description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
-                >
-                  <CallStack frames={derived.callStack} />
-                </Panel>
-                <Panel
-                  title="Heap"
-                  accent="emerald"
-                  bodyClassName="overflow-y-auto"
-                  description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
-                >
-                  <Heap entries={derived.heap} />
-                </Panel>
-              </div>
-              <div className="h-24 flex-none">
-                <Panel
-                  title="Pending Timers"
-                  accent="teal"
-                  bodyClassName="overflow-y-auto"
-                  description="setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase below. nextTick and Microtask Queue moved into the Microtask Hub below, they're cross-cutting, not phases, so they sit inside the loop they drain between, not off to the side."
-                >
-                  <QueueList
-                    items={derived.webApiTimers}
-                    emptyText="no pending timers"
-                    color="teal"
-                    direction="col"
-                    initialOffset={{ y: -24 }}
+                <ResizablePanel id="nodeTopRow" minSize={10}>
+                  <Group
+                    orientation="horizontal"
+                    id="nodeTopRow"
+                    defaultLayout={getLayout('nodeTopRow')}
+                    onLayoutChanged={onLayoutChanged('nodeTopRow')}
+                    groupRef={registerGroupRef('nodeTopRow')}
+                    className="h-full"
+                  >
+                    <ResizablePanel id="nodeCallStack" minSize={15}>
+                      <Panel
+                        title="Call Stack"
+                        accent="indigo"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Tracks the function that's currently running. JS runs one thing at a time, so calls stack on top of each other and pop off in reverse order."
+                      >
+                        <CallStack frames={derived.callStack} />
+                      </Panel>
+                    </ResizablePanel>
+                    <VSep />
+                    <ResizablePanel id="nodeHeap" minSize={15}>
+                      <Panel
+                        title="Heap"
+                        accent="emerald"
+                        bodyClassName="overflow-y-auto"
+                        className="h-full"
+                        description="Where objects, arrays, and functions actually live in memory. Variables just point to a value stored here, which can outlive the function that created it."
+                      >
+                        <Heap entries={derived.heap} />
+                      </Panel>
+                    </ResizablePanel>
+                  </Group>
+                </ResizablePanel>
+
+                <HSep />
+
+                <ResizablePanel id="pendingTimers" minSize={10}>
+                  <Panel
+                    title="Pending Timers"
+                    accent="teal"
+                    bodyClassName="overflow-y-auto"
+                    className="h-full"
+                    description="setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase below. nextTick and Microtask Queue moved into the Microtask Hub below, they're cross-cutting, not phases, so they sit inside the loop they drain between, not off to the side."
+                  >
+                    <QueueList
+                      items={derived.webApiTimers}
+                      emptyText="no pending timers"
+                      color="teal"
+                      direction="col"
+                      initialOffset={{ y: -24 }}
+                    />
+                  </Panel>
+                </ResizablePanel>
+
+                <HSep />
+
+                <ResizablePanel id="phaseTrack" minSize={20}>
+                  <NodePhaseTrack
+                    currentPhase={derived.currentPhase}
+                    timers={derived.macrotaskQueueTimers}
+                    pendingCallbacks={derived.pendingSystemCallbacks}
+                    poll={derived.pendingIO}
+                    check={derived.pendingImmediates}
+                    closeCallbacks={derived.pendingCloseCallbacks}
+                    pendingNextTicks={derived.pendingNextTicks}
+                    pendingMicrotasks={derived.pendingMicrotasks}
+                    lastDrainStepId={derived.lastDrainStepId}
                   />
-                </Panel>
-              </div>
-              <NodePhaseTrack
-                currentPhase={derived.currentPhase}
-                timers={derived.macrotaskQueueTimers}
-                pendingCallbacks={derived.pendingSystemCallbacks}
-                poll={derived.pendingIO}
-                check={derived.pendingImmediates}
-                closeCallbacks={derived.pendingCloseCallbacks}
-                pendingNextTicks={derived.pendingNextTicks}
-                pendingMicrotasks={derived.pendingMicrotasks}
-                lastDrainStepId={derived.lastDrainStepId}
-              />
-            </section>
-          )}
-        </div>
+                </ResizablePanel>
+              </Group>
+            )}
+          </ResizablePanel>
+        </Group>
 
         <footer className="flex-none border-t border-slate-200 bg-surface px-4 py-2.5 shadow-[0_-1px_2px_rgba(0,0,0,0.03)]">
           <Controls playback={playback} stepCount={steps.length} steps={steps} />
