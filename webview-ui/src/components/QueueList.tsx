@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { PendingItem } from '../App';
+import { InfoDot } from './InfoDot';
 
 export type QueueColor = 'teal' | 'amber' | 'violet' | 'sky';
 
@@ -58,7 +59,7 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
             animate={{ opacity: 1, x: 0, y: 0, scale: 1, rotate: 0 }}
             exit={{ opacity: 0, scale: 0.6, transition: { duration: 0.18 } }}
             transition={{ type: 'spring', stiffness: 380, damping: 30, mass: 0.8 }}
-            className={`relative flex min-w-22.5 flex-col gap-0.5 rounded-lg border ${c.border} ${c.bg} px-3 py-2 font-mono text-xs ${c.text} shadow-sm`}
+            className={`relative flex w-28 flex-none flex-col gap-0.5 rounded-lg border ${c.border} ${c.bg} px-3 py-2 font-mono text-xs ${c.text} shadow-sm`}
           >
             {showNextBadge && i === 0 && (
               <span
@@ -67,8 +68,16 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
                 next
               </span>
             )}
-            <span className="font-semibold">{item.label}</span>
-            {item.detail && <span className={`text-[11px] ${c.textMuted}`}>{item.detail}</span>}
+            <div className="flex min-w-0 items-center gap-1">
+              {item.detail && (
+                // Inline, leading the code it belongs to — not a badge straddling the border;
+                // this is an explicit, discoverable affordance in place of an invisible
+                // whole-box hover. The tooltip pairs the API name back with its callback, so a
+                // student who only sees the callback on the box can still see what scheduled it.
+                <InfoDot label="Show full callback code" text={`${item.label}\n${item.detail}`} />
+              )}
+              <span className="truncate font-semibold">{item.detail ?? item.label}</span>
+            </div>
           </motion.div>
         ))}
       </AnimatePresence>
