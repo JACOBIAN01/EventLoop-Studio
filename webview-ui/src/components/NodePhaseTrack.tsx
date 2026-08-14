@@ -1,9 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Layout, GroupImperativeHandle } from 'react-resizable-panels';
+import { Group, Panel as ResizablePanel } from 'react-resizable-panels';
 import type { NodePhase } from '../../../src/shared/types';
 import type { PendingItem } from '../App';
 import { QueueList } from './QueueList';
 import { InfoDot } from './InfoDot';
+import { VSep } from './Separators';
 
 export interface NodePhaseTrackProps {
   currentPhase: NodePhase | null;
@@ -17,6 +20,11 @@ export interface NodePhaseTrackProps {
   pendingMicrotasks: PendingItem[];
   /** Changes on every real 'run-nexttick'/'run-microtask' step — drives the hub's per-callback flash. */
   lastDrainStepId: number | null;
+  /** Threaded down from usePanelSizes, so the Microtask Hub's nextTick/Promise split can join
+   *  the same resizable-layout system every other panel split already uses. */
+  getLayout: (groupId: string) => Layout;
+  registerGroupRef: (groupId: string) => (handle: GroupImperativeHandle | null) => void;
+  onLayoutChanged: (groupId: string) => (layout: Layout) => void;
 }
 
 interface PhaseDef {
@@ -153,10 +161,16 @@ function MicrotaskHub({
   nextTicks,
   microtasks,
   lastDrainStepId,
+  getLayout,
+  registerGroupRef,
+  onLayoutChanged,
 }: {
   nextTicks: PendingItem[];
   microtasks: PendingItem[];
   lastDrainStepId: number | null;
+  getLayout: (groupId: string) => Layout;
+  registerGroupRef: (groupId: string) => (handle: GroupImperativeHandle | null) => void;
+  onLayoutChanged: (groupId: string) => (layout: Layout) => void;
 }) {
   return (
     <div className="relative mx-auto flex h-full min-h-0 w-full flex-col overflow-hidden rounded-lg border-[1.5px] border-sky-500 bg-sky-50">
@@ -179,20 +193,32 @@ function MicrotaskHub({
           text="Drains after every callback, not once per phase — process.nextTick and the Promise/microtask queue are cross-cutting, not phases of their own, so they sit inside the loop they drain between."
         />
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-2">
-        <div className="flex min-h-0 flex-col border-r border-sky-100 px-2.5 py-2">
-          <span className="mb-1 block flex-none text-[9.5px] font-bold text-sky-700">nextTick Queue</span>
-          <div className="min-h-0 flex-1">
-            <QueueList items={nextTicks} emptyText="no nextTick callbacks queued" color="sky" initialOffset={{ y: -14 }} />
+      <Group
+        orientation="horizontal"
+        id="microtaskHub"
+        defaultLayout={getLayout('microtaskHub')}
+        onLayoutChanged={onLayoutChanged('microtaskHub')}
+        groupRef={registerGroupRef('microtaskHub')}
+        className="min-h-0 flex-1"
+      >
+        <ResizablePanel id="nextTick" minSize={25}>
+          <div className="flex h-full min-h-0 flex-col px-2.5 py-2">
+            <span className="mb-1 block flex-none text-[9.5px] font-bold text-sky-700">nextTick Queue</span>
+            <div className="min-h-0 flex-1">
+              <QueueList items={nextTicks} emptyText="no nextTick callbacks queued" color="sky" initialOffset={{ y: -14 }} />
+            </div>
           </div>
-        </div>
-        <div className="flex min-h-0 flex-col px-2.5 py-2">
-          <span className="mb-1 block flex-none text-[9.5px] font-bold text-sky-700">Promise Queue</span>
-          <div className="min-h-0 flex-1">
-            <QueueList items={microtasks} emptyText="no microtasks queued" color="amber" initialOffset={{ y: -14 }} />
+        </ResizablePanel>
+        <VSep />
+        <ResizablePanel id="promise" minSize={25}>
+          <div className="flex h-full min-h-0 flex-col px-2.5 py-2">
+            <span className="mb-1 block flex-none text-[9.5px] font-bold text-sky-700">Promise Queue</span>
+            <div className="min-h-0 flex-1">
+              <QueueList items={microtasks} emptyText="no microtasks queued" color="amber" initialOffset={{ y: -14 }} />
+            </div>
           </div>
-        </div>
-      </div>
+        </ResizablePanel>
+      </Group>
     </div>
   );
 }
@@ -214,6 +240,9 @@ export function NodePhaseTrack({
   pendingNextTicks,
   pendingMicrotasks,
   lastDrainStepId,
+  getLayout,
+  registerGroupRef,
+  onLayoutChanged,
 }: NodePhaseTrackProps) {
   const itemsFor: Record<NodePhase, PendingItem[]> = {
     timers,
@@ -322,7 +351,14 @@ export function NodePhaseTrack({
 
         {/* row 3: the hub, spans columns 2-7 */}
         <div style={{ gridColumn: '2 / 8', gridRow: 3 }} className="h-full min-h-0 w-full py-1">
-          <MicrotaskHub nextTicks={pendingNextTicks} microtasks={pendingMicrotasks} lastDrainStepId={lastDrainStepId} />
+          <MicrotaskHub
+            nextTicks={pendingNextTicks}
+            microtasks={pendingMicrotasks}
+            lastDrainStepId={lastDrainStepId}
+            getLayout={getLayout}
+            registerGroupRef={registerGroupRef}
+            onLayoutChanged={onLayoutChanged}
+          />
         </div>
 
         {/* row 4: spokes back up out of the hub */}

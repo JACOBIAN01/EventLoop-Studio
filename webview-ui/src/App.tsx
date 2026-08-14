@@ -13,7 +13,8 @@ import { ConsolePanel } from './components/ConsolePanel';
 import { Controls } from './components/Controls';
 import { Panel } from './components/Panel';
 import { CaptionBar } from './components/CaptionBar';
-import { Group, Panel as ResizablePanel, Separator } from 'react-resizable-panels';
+import { VSep, HSep } from './components/Separators';
+import { Group, Panel as ResizablePanel } from 'react-resizable-panels';
 import { usePanelSizes } from './state/usePanelSizes';
 
 export type EventLoopMode = 'browser' | 'node';
@@ -322,33 +323,6 @@ export interface AppProps {
   hostError?: string | null;
   /** Omitted in contexts with no persistence available (e.g. a bare browser preview). */
   vscodeApi?: WebviewStateApi;
-}
-
-/**
- * Draggable dividers between panels. The hit area is w-3/h-3 (12px, matching the gap-3 spacing
- * this layout used before panels became resizable) so the visual rhythm stays the same; a thin
- * 1px line centered inside it is the only visible trace, brightening on hover.
- */
-function VSep() {
-  return (
-    <Separator className="group relative w-3 flex-none cursor-col-resize outline-none">
-      <span
-        className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-slate-300 transition-colors group-hover:bg-indigo-400"
-        aria-hidden="true"
-      />
-    </Separator>
-  );
-}
-
-function HSep() {
-  return (
-    <Separator className="group relative h-3 flex-none cursor-row-resize outline-none">
-      <span
-        className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-slate-300 transition-colors group-hover:bg-indigo-400"
-        aria-hidden="true"
-      />
-    </Separator>
-  );
 }
 
 export function App({ trace, hostError, vscodeApi }: AppProps) {
@@ -745,6 +719,9 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
                     pendingNextTicks={derived.pendingNextTicks}
                     pendingMicrotasks={derived.pendingMicrotasks}
                     lastDrainStepId={derived.lastDrainStepId}
+                    getLayout={getLayout}
+                    registerGroupRef={registerGroupRef}
+                    onLayoutChanged={onLayoutChanged}
                   />
                 </ResizablePanel>
               </Group>

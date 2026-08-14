@@ -23,6 +23,7 @@ export const DEFAULT_LAYOUTS: LayoutMap = {
   browserRow3: { microtaskQueue: 50, macrotaskQueue: 50 },
   nodeRight: { nodeTopRow: 20, pendingTimers: 15, phaseTrack: 65 },
   nodeTopRow: { nodeCallStack: 50, nodeHeap: 50 },
+  microtaskHub: { nextTick: 50, promise: 50 },
 };
 
 /**
