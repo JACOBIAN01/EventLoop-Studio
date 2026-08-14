@@ -44,6 +44,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   horizontally.
 - Node mode's phase chip count badges were clipped in half at the panel's top edge; fixed with
   proper spacing.
+- Removed a leftover "Hello Developer" command from the initial extension scaffold that had no
+  purpose for anyone actually using the extension.
 
 ## [0.2.0] - 2026-08-13
 
