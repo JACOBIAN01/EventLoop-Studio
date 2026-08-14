@@ -84,9 +84,22 @@ export async function recordTrace(
   const pendingCloseCallbacks: PendingCallback[] = [];
   let nodeApiSeq = 0;
 
+  // Set immediately before dispatching a queued callback (see runPhaseCallback / the browser
+  // timer loop / wrapMicrotaskCallback below), and consumed by whichever push-stack happens to
+  // fire first once that callback actually starts running — which is always that callback's own
+  // frame, since dispatch calls it directly. This is what lets the queue token's layoutId morph
+  // straight into the real callback's Call Stack frame, without a separate synthetic "... handler"
+  // frame in between (the previous design used a dedicated wrapper frame for this instead).
+  let pendingHandlerRefId: number | undefined;
+  function consumePendingRefId(): number | undefined {
+    const refId = pendingHandlerRefId;
+    pendingHandlerRefId = undefined;
+    return refId;
+  }
+
   const traceApi = {
     enter(label: string, line: number) {
-      push('push-stack', { label, line });
+      push('push-stack', { label, line, refId: consumePendingRefId() });
     },
     exit(label: string) {
       push('pop-stack', { label });
@@ -116,7 +129,10 @@ export async function recordTrace(
     return (...args: unknown[]) => {
       // console.log is a real function call — it belongs on the Call Stack too, even
       // though it's native rather than user-defined code our instrumentation can wrap.
-      push('push-stack', { label: methodLabel });
+      // consumePendingRefId() is a no-op (undefined) unless this console.log call IS the
+      // callback a scheduled item just dispatched (e.g. `setTimeout(console.log, 0)`), in
+      // which case it lets the queue token still morph into this frame.
+      push('push-stack', { label: methodLabel, refId: consumePendingRefId() });
       push('console-log', { label: methodLabel, detail: args.map(formatValue).join(' ') });
       push('pop-stack', { label: methodLabel });
     };
@@ -221,15 +237,15 @@ export async function recordTrace(
     const scheduleStepId = push('schedule-microtask', { label, detail: describeCallback(callback) });
     return (...args: unknown[]) => {
       push('run-microtask', { label, refId: scheduleStepId });
-      // Synthetic wrapper frame, mirroring the timer driver below: explicitly carries
-      // refId so the UI can animate "this queued token became this call-stack frame"
-      // without having to infer the link from step adjacency.
-      const handlerLabel = `${label} handler`;
-      push('push-stack', { label: handlerLabel, refId: scheduleStepId });
+      // No synthetic wrapper frame here — the callback's own instrumented push-stack (fired the
+      // moment `callback(...)` below actually starts running) picks up scheduleStepId via
+      // pendingHandlerRefId/consumePendingRefId, so the Call Stack shows only the real callback,
+      // not an extra "... handler" frame around it.
+      pendingHandlerRefId = scheduleStepId;
       try {
         return callback(...args);
       } finally {
-        push('pop-stack', { label: handlerLabel });
+        pendingHandlerRefId = undefined;
       }
     };
   }
@@ -319,13 +335,15 @@ export async function recordTrace(
       // whatever else happens to be on the stack at any given instant.
       push('timer-ready', { label: timer.label, refId: timer.scheduleStepId });
       push('run-timer', { label: timer.label, refId: timer.scheduleStepId });
-      push('push-stack', { label: `${timer.label} handler`, refId: timer.scheduleStepId });
+      // No synthetic "... handler" frame — see wrapMicrotaskCallback's comment above.
+      pendingHandlerRefId = timer.scheduleStepId;
       try {
         timer.callback();
       } catch (err: any) {
         push('console-log', { label: 'console.error', detail: `Uncaught: ${err?.message ?? String(err)}` });
+      } finally {
+        pendingHandlerRefId = undefined;
       }
-      push('pop-stack', { label: `${timer.label} handler` });
 
       await flushMicrotasks();
     }
@@ -441,13 +459,15 @@ export async function recordTrace(
       push(readyKind, { label: item.label, refId: item.scheduleStepId });
     }
     push(runKind, { label: item.label, refId: item.scheduleStepId });
-    push('push-stack', { label: `${item.label} handler`, refId: item.scheduleStepId });
+    // No synthetic "... handler" frame — see wrapMicrotaskCallback's comment above.
+    pendingHandlerRefId = item.scheduleStepId;
     try {
       item.callback();
     } catch (err: any) {
       push('console-log', { label: 'console.error', detail: `Uncaught: ${err?.message ?? String(err)}` });
+    } finally {
+      pendingHandlerRefId = undefined;
     }
-    push('pop-stack', { label: `${item.label} handler` });
     if (!opts.skipDrain) {
       await drainMicroQueues();
     }
