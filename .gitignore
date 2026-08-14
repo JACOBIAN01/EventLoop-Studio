@@ -2,3 +2,4 @@ out
 node_modules
 *.vsix
 webview-ui/preview-bundle.*
+.DS_Store
