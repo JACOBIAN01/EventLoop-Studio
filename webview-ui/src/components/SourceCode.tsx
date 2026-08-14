@@ -19,8 +19,14 @@ export function SourceCode({ sourceCode, currentLine }: SourceCodeProps) {
   }, [currentLine]);
 
   return (
-    <div className="h-full overflow-y-auto rounded-lg bg-surface">
-      <pre className="relative m-0 font-mono text-[12.5px]">
+    <div className="h-full overflow-x-auto overflow-y-auto rounded-lg bg-surface">
+      {/* w-max + min-w-full: without an explicit width, <pre> stays pinned to the visible
+          viewport width even when a line is long enough to need horizontal scroll — so the
+          active-line highlight bar below (sized via inset-x-0, relative to this element) would
+          stop partway across a scrolled long line instead of covering its full width. Growing
+          <pre> to match its widest line (while never shrinking below the full container width)
+          keeps the highlight's background correct at any scroll position. */}
+      <pre className="relative m-0 w-max min-w-full font-mono text-[12.5px]">
         <code className="relative block">
           {currentLine !== null && (
             <motion.div
