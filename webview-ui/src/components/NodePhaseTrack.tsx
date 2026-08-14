@@ -287,7 +287,10 @@ export function NodePhaseTrack({
           const isIdlePrepareChip = def.phase === 'idle-prepare';
           const isActive = currentPhase === def.phase && !isIdlePrepareChip;
           const items = itemsFor[def.phase];
-          const preview = items.length === 0 ? null : items.length === 1 ? items[0].label : `${items[0].label} +${items.length - 1} more`;
+          // Same as QueueList: show the callback itself, not just the scheduling API's name —
+          // process.nextTick/setTimeout/etc. all look identical otherwise.
+          const previewText = items.length > 0 ? items[0].detail ?? items[0].label : null;
+          const preview = items.length === 0 ? null : items.length === 1 ? previewText : `${previewText} +${items.length - 1} more`;
           const pos = GRID_POS[def.phase];
           const num = PHASES.findIndex((p) => p.phase === def.phase) + 1;
 
@@ -338,9 +341,17 @@ export function NodePhaseTrack({
                 )}
               </div>
               {preview && (
-                <span className="max-w-24 truncate text-[9.5px] font-semibold text-violet-600" title={preview}>
-                  {preview}
-                </span>
+                // A bordered box, not just plain text — visually sets apart "what's actually
+                // stored here" from the phase's own number/label header above it.
+                <div className="flex min-w-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-1">
+                  {items[0]?.detail && (
+                    // Same affordance as QueueList's queue boxes: an explicit "i" tooltip
+                    // pairing the API name back with the callback, instead of a plain native
+                    // title on the truncated text.
+                    <InfoDot label="Show full callback code" text={`${items[0].label}\n${items[0].detail}`} />
+                  )}
+                  <span className="max-w-20 truncate text-[9.5px] font-semibold text-violet-600">{preview}</span>
+                </div>
               )}
             </div>
           );
