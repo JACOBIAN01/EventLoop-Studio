@@ -266,7 +266,10 @@ export function NodePhaseTrack({
           hub inside them) always fit exactly inside the available height, never overflow past it
           and get clipped by the page's outer overflow-hidden, no matter how big the chips get. */}
       <div
-        className="grid min-h-0 flex-1 items-stretch justify-items-stretch gap-x-3 gap-y-1.5"
+        // pt-2: without it, row 1's chips sit flush against this panel's own top edge (itself
+        // wrapped by react-resizable-panels' overflow:auto container), leaving no room for the
+        // count badge's -top-1.5 offset to render — it was getting clipped clean in half.
+        className="grid min-h-0 flex-1 items-stretch justify-items-stretch gap-x-3 gap-y-1.5 pt-2"
         style={{
           gridTemplateColumns: 'repeat(9, auto)',
           // Chip rows (1.3fr each) unchanged from before — the 6 phases keep both their grid
