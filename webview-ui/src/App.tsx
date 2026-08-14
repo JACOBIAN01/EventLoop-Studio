@@ -688,30 +688,14 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
 
                 <HSep />
 
-                <ResizablePanel id="pendingTimers" minSize={10}>
-                  <Panel
-                    title="Pending Timers"
-                    accent="teal"
-                    bodyClassName="overflow-y-auto"
-                    className="h-full"
-                    description="setTimeout/setInterval callbacks whose delay hasn't elapsed yet, waiting for the Timers phase below. nextTick and Microtask Queue moved into the Microtask Hub below, they're cross-cutting, not phases, so they sit inside the loop they drain between, not off to the side."
-                  >
-                    <QueueList
-                      items={derived.webApiTimers}
-                      emptyText="no pending timers"
-                      color="teal"
-                      direction="col"
-                      initialOffset={{ y: -24 }}
-                    />
-                  </Panel>
-                </ResizablePanel>
-
-                <HSep />
-
                 <ResizablePanel id="phaseTrack" minSize={20}>
                   <NodePhaseTrack
                     currentPhase={derived.currentPhase}
-                    timers={derived.macrotaskQueueTimers}
+                    // Pending Timers isn't a separate panel anymore — it IS the ring's first
+                    // phase position. Both "still waiting" and "ready to run" are the same
+                    // underlying queue at different moments, so the chip shows the union of both
+                    // instead of picking one.
+                    timers={[...derived.webApiTimers, ...derived.macrotaskQueueTimers]}
                     pendingCallbacks={derived.pendingSystemCallbacks}
                     poll={derived.pendingIO}
                     check={derived.pendingImmediates}

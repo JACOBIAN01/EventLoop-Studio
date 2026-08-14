@@ -38,7 +38,13 @@ interface PhaseDef {
 
 /** Real libuv order, fixed, every iteration — this is the whole point of the track. */
 const PHASES: PhaseDef[] = [
-  { phase: 'timers', shortLabel: 'Timers', label: 'Timers', description: 'Runs expired setTimeout/setInterval callbacks.' },
+  {
+    phase: 'timers',
+    shortLabel: 'Timers',
+    label: 'Pending Timers',
+    description:
+      "The same queue shown at every moment, not two separate stores: a setTimeout callback sits here whether it's still waiting for its delay to elapse or ready and about to run.",
+  },
   {
     phase: 'pending-callbacks',
     shortLabel: 'Pending CB',
