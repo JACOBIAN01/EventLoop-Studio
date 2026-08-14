@@ -339,6 +339,12 @@ export function NodePhaseTrack({
                     text="This phase never lights up, in this simulator or in real Node: userland code has no hook into Idle/Prepare either, so nothing can ever be scheduled into it. That's a real fact about Node, not a gap here."
                   />
                 )}
+                {def.phase === 'timers' && (
+                  <InfoDot
+                    label="Why might real Node show a different order here?"
+                    text="At the very top of a script, whether a 0ms setTimeout or a setImmediate fires first depends on how much real time has passed before the event loop starts, not on any fixed rule. Node's documentation explicitly calls this ordering undefined at the top level (inside an I/O callback, setImmediate always wins, with no ambiguity there). This simulator resolves it one consistent way so replay stays reproducible. If your terminal shows the opposite order, neither one is wrong; you're seeing the same real non-determinism Node has always had."
+                  />
+                )}
               </div>
               {preview && (
                 // A bordered box, not just plain text — visually sets apart "what's actually

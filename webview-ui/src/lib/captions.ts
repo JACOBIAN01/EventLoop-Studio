@@ -45,10 +45,15 @@ export function explainStep(step: ExecutionStep): Caption | null {
       };
 
     case 'run-timer':
-      return {
-        tier: 'rule',
-        text: `Stack and microtasks are empty, so this callback moves onto the Call Stack.`,
-      };
+      return step.ambiguous
+        ? {
+            tier: 'rule',
+            text: `This 0ms timer's delay is up, but racing setImmediate here is genuinely non-deterministic in real Node, so don't treat this order as a rule.`,
+          }
+        : {
+            tier: 'rule',
+            text: `Stack and microtasks are empty, so this callback moves onto the Call Stack.`,
+          };
 
     case 'schedule-microtask':
       return {
