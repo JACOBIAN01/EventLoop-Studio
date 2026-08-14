@@ -43,9 +43,12 @@ export function instrument(sourceCode: string): string {
   const heapRefresh = heapRefreshSnippet(trackedNames);
 
   function wrapFunctionBody(node: any, ancestors: any[]) {
-    const label = getFunctionLabel(node, ancestors);
+    const { label, full } = getFunctionLabel(node, ancestors, sourceCode);
     const line = node.loc.start.line;
-    const enterCall = `__trace.enter(${JSON.stringify(label)}, ${line});`;
+    // `full` is only ever longer than `label` when the label itself had to be truncated (an
+    // inline callback's own code, capped so a Call Stack frame doesn't grow unbounded) — passed
+    // through so the UI can still show the complete, untruncated code on hover.
+    const enterCall = `__trace.enter(${JSON.stringify(label)}, ${line}, ${JSON.stringify(full)});`;
 
     // The heap refresh goes *inside* the finally block (after it, code would be dead following
     // a `return`) — a finally block always runs, even after an early return, and JS guarantees
@@ -170,6 +173,14 @@ function heapRefreshSnippet(names: Set<string>): string {
   return `${calls}\n`;
 }
 
+/** Collapses a source snippet to one line and caps its length, for display as a Call Stack
+ *  frame label — unlike the queue panels (which keep the full snippet and truncate visually via
+ *  CSS), a frame label is plain text with no truncation of its own, so the cap has to happen here. */
+function truncateSnippet(text: string, max = 60): string {
+  const collapsed = text.replace(/\s+/g, ' ').trim();
+  return collapsed.length > max ? `${collapsed.slice(0, max - 1)}…` : collapsed;
+}
+
 function applyInsertions(sourceCode: string, insertions: Insertion[]): string {
   const byPos = new Map<number, string[]>();
   const ordered = [...insertions].sort((a, b) => a.order - b.order);
@@ -189,29 +200,47 @@ function applyInsertions(sourceCode: string, insertions: Insertion[]): string {
   return output;
 }
 
-function getFunctionLabel(node: any, ancestors: any[]): string {
+/**
+ * `label` is what identifies the frame (rendered directly, and matched against on exit); `full`
+ * is the same text UNTRUNCATED — identical to `label` for every named-binding case below, and
+ * only actually longer than it for an inline callback's own source (see the CallExpression
+ * branch), where `label` gets capped so a Call Stack frame doesn't grow unbounded. Callers pass
+ * `full` through to the UI so the complete code is still available on hover.
+ */
+function getFunctionLabel(node: any, ancestors: any[], sourceCode: string): { label: string; full: string } {
   if (node.type === 'FunctionDeclaration' && node.id) {
-    return `${node.id.name}()`;
+    const label = `${node.id.name}()`;
+    return { label, full: label };
   }
 
   const parent = ancestors[ancestors.length - 2];
   if (parent) {
     if (parent.type === 'VariableDeclarator' && parent.id.type === 'Identifier') {
-      return `${parent.id.name}()`;
+      const label = `${parent.id.name}()`;
+      return { label, full: label };
     }
     if (parent.type === 'AssignmentExpression' && parent.left.type === 'Identifier') {
-      return `${parent.left.name}()`;
+      const label = `${parent.left.name}()`;
+      return { label, full: label };
     }
     if ((parent.type === 'Property' || parent.type === 'MethodDefinition') && parent.key.type === 'Identifier') {
-      return `${parent.key.name}()`;
+      const label = `${parent.key.name}()`;
+      return { label, full: label };
     }
     if (parent.type === 'CallExpression') {
-      return `${describeCallee(parent.callee)} callback`;
+      // An inline callback passed straight to a call (setTimeout(() => ..., 0),
+      // somePromise.then(() => ...), arr.forEach(() => ...), etc.) — showing the callback's own
+      // code on its Call Stack frame is far more useful than a generic "<callee> callback"
+      // label, especially for chains like `Promise.resolve().then(...)` where the callee itself
+      // can't be described any more specifically than "<expression>.then".
+      const full = sourceCode.slice(node.start, node.end).replace(/\s+/g, ' ').trim();
+      return { label: truncateSnippet(full), full };
     }
   }
 
   if (node.id?.name) {
-    return `${node.id.name}()`;
+    const label = `${node.id.name}()`;
+    return { label, full: label };
   }
-  return '<anonymous>()';
+  return { label: '<anonymous>()', full: '<anonymous>()' };
 }

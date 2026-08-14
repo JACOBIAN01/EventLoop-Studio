@@ -37,10 +37,16 @@ export interface StackFrame {
   id: number;
   label: string;
   /**
-   * When this frame is a scheduled-callback handler (a timer/microtask "handler" frame),
-   * the id of the 'schedule-timer'/'schedule-microtask' step for the token it came from —
-   * same value as the PendingItem.id it replaced. Use this as a shared animation key
-   * (e.g. Framer Motion's layoutId) so the queue token visually morphs into this frame.
+   * The untruncated version of `label`, when the two differ (an inline callback whose own code
+   * got capped for display — see instrument.ts's getFunctionLabel) — shown in a hover tooltip so
+   * the full code is never actually lost, just visually capped.
+   */
+  detail?: string;
+  /**
+   * When this frame is a scheduled callback (a timer/microtask callback the event loop just
+   * dispatched), the id of the 'schedule-timer'/'schedule-microtask' step for the queue token it
+   * came from. Use this as a shared animation key (e.g. Framer Motion's layoutId) so the queue
+   * token visually morphs directly into this frame.
    */
   tokenRefId?: number;
 }
@@ -167,7 +173,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
 
     switch (step.kind) {
       case 'push-stack':
-        callStack.push({ id: step.id, label: step.label, tokenRefId: step.refId });
+        callStack.push({ id: step.id, label: step.label, detail: step.detail, tokenRefId: step.refId });
         break;
 
       case 'pop-stack':

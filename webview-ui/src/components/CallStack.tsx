@@ -26,8 +26,8 @@ export function CallStack({ frames }: CallStackProps) {
       <AnimatePresence initial={false} mode="popLayout">
         {topToBottom.map((frame, i) => {
           const isTop = i === 0;
-          // Handler frames (tokenRefId set) share a layoutId with the queue token that
-          // spawned them — Framer Motion morphs the token across panels into this frame.
+          // A dispatched callback's frame (tokenRefId set) shares a layoutId with the queue
+          // token that spawned it — Framer Motion morphs the token across panels into this frame.
           const layoutId = frame.tokenRefId !== undefined ? `token-${frame.tokenRefId}` : undefined;
           return (
             <motion.div
@@ -40,6 +40,10 @@ export function CallStack({ frames }: CallStackProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
               transition={{ type: 'spring', stiffness: 480, damping: 34, mass: 0.7 }}
+              // detail is only ever set when label had to be truncated (an inline callback's own
+              // code, capped so the frame doesn't grow unbounded) — the tooltip is where the
+              // complete code is still available.
+              title={frame.detail ?? undefined}
               className={
                 isTop
                   // to-[...] uses violet-600's literal value, not the class: that variable is

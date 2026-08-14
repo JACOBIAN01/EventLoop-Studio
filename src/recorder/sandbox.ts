@@ -98,8 +98,11 @@ export async function recordTrace(
   }
 
   const traceApi = {
-    enter(label: string, line: number) {
-      push('push-stack', { label, line, refId: consumePendingRefId() });
+    // `full` is the untruncated version of `label` (only ever different for an inline callback
+    // whose own code got capped for display, see instrument.ts's getFunctionLabel) — carried as
+    // `detail` so the Call Stack can show it in a hover tooltip without losing it entirely.
+    enter(label: string, line: number, full?: string) {
+      push('push-stack', { label, line, detail: full !== label ? full : undefined, refId: consumePendingRefId() });
     },
     exit(label: string) {
       push('pop-stack', { label });
