@@ -26,6 +26,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   connected by cross-container arrows. Pending Timers and the Timers phase were always the same
   underlying queue at two different moments (still waiting vs. ready to run); showing them as two
   disconnected things was misleading.
+- **A top-level `setTimeout(fn, 0)` racing a top-level `setImmediate` is now flagged as
+  ambiguous, not silently resolved as if it were a rule.** This is the one genuinely
+  undocumented ordering in real Node itself: which one wins depends on real machine timing at
+  process startup, not on any fixed rule (inside an I/O callback, `setImmediate` always and
+  correctly wins, no ambiguity there). When this exact race occurs, the step's caption calls it
+  out directly, and the Timers phase chip carries a dedicated hover tooltip explaining why a
+  real terminal run can legitimately show the opposite order.
 
 ### Changed
 
