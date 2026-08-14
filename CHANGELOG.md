@@ -4,6 +4,47 @@ All notable changes to EventLoop Studio are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.0] - 2026-08-14
+
+### Added
+
+- **Registration calls now appear on the Call Stack.** `process.nextTick(...)`, `setTimeout(...)`,
+  `setImmediate(...)`, `queueMicrotask(...)`, and `.then()`/`.catch()`/`.finally()` each get a
+  brief real frame for the *registration call itself*, popping immediately, the same way
+  `console.log` already did. Previously only `console.log` calls showed this; every other
+  scheduling API silently skipped the stack, which was inconsistent with what's actually
+  happening.
+- **Pending callbacks show their real code, not the API that scheduled them.** Every queue token
+  and phase-chip preview (Web APIs, nextTick Queue, Promise Queue, Macrotask Queue, and every
+  Node-mode phase chip) now displays the callback's own source, truncated with a hoverable "i"
+  icon that reveals the full, untruncated code alongside the API call that queued it. Two pending
+  `process.nextTick` callbacks are now visually distinguishable from each other; before, both
+  showed the identical generic label.
+- **The Microtask Hub's nextTick/Promise split is now resizable**, joining every other panel
+  split in the app, with its own entry in "Reset Layout."
+- **Node mode's Pending Timers panel is now the ring's first phase chip**, not a separate panel
+  connected by cross-container arrows. Pending Timers and the Timers phase were always the same
+  underlying queue at two different moments (still waiting vs. ready to run); showing them as two
+  disconnected things was misleading.
+
+### Changed
+
+- **FIFO queues (nextTick, Promise, Macrotask) always lay out horizontally now**, scrolling on
+  the x-axis instead of wrapping to a second row, so left-to-right always reads as
+  oldest-to-newest.
+- **The Call Stack no longer shows a synthetic "... handler" frame.** Only the real callback
+  function's own frame appears when it runs; the placeholder frame that used to precede it is
+  gone.
+
+### Fixed
+
+- Tooltips inside the Call Stack, Heap, and Node mode's phase chips were being clipped by their
+  panel's own scroll container; they now render correctly regardless of scroll position.
+- The Source panel's active-line highlight bar no longer breaks when a long line is scrolled
+  horizontally.
+- Node mode's phase chip count badges were clipped in half at the panel's top edge; fixed with
+  proper spacing.
+
 ## [0.2.0] - 2026-08-13
 
 ### Added
