@@ -38,8 +38,15 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
   const c = COLOR_CLASSES[color];
   return (
     <div
-      className={`flex h-full flex-wrap content-start gap-2 overflow-y-auto ${
-        direction === 'row' ? 'flex-row pt-2' : 'flex-col'
+      // A FIFO queue (direction="row", the default) always lays its items out in one horizontal
+      // line, oldest-to-newest left-to-right, scrolling on the x-axis instead of wrapping —
+      // wrapping to a second row breaks that left-to-right ordering as a visual read of "what
+      // comes next". A holding pool (direction="col", Web APIs / Pending Timers) isn't FIFO-
+      // ordered, so it keeps wrapping in a column instead.
+      className={`flex h-full gap-2 ${
+        direction === 'row'
+          ? 'flex-row flex-nowrap items-start overflow-x-auto overflow-y-hidden pt-2'
+          : 'flex-col flex-wrap content-start overflow-y-auto'
       }`}
     >
       {items.length === 0 && (
