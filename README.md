@@ -112,6 +112,11 @@ The main entry point. Available from the Command Palette or as a toolbar button 
 
 Renders active function frames bottom-to-top, newest on top, exactly like a real call stack. Recursive calls stack visibly, one frame per invocation. The top frame is visually distinct (solid fill) so you can immediately see what's *currently* executing versus what's merely still on the stack waiting for something it called to return.
 
+Registration calls get their own brief frame too, not just the callback that eventually runs: `process.nextTick(...)`, `setTimeout(...)`, `setImmediate(...)`, `queueMicrotask(...)`, and `.then()`/`.catch()`/`.finally()` each push and pop a real frame for the call itself, the same way `console.log` always has. When a queued callback later actually runs, only *its own* frame appears; there's no synthetic placeholder frame standing in for it beforehand.
+
+> [!TIP]
+> A frame's tooltip (hover or focus) shows its full, untruncated source, useful once a callback's code is longer than the frame can display.
+
 ### Heap
 
 Shows every tracked `let`/`const`/`var` binding and function parameter, with its **current** value: live-updated as your code mutates it, not frozen at declaration time.
@@ -134,6 +139,8 @@ This is where the classic "why did my 0ms timeout run *after* my promise?" quest
 - The **Event Loop** always fully drains the Microtask Queue before it ever looks at the Macrotask Queue, and it only pulls a macrotask once the Call Stack is completely empty.
 
 Each pending item visually travels from the queue it's sitting in directly into the Call Stack the moment it actually runs: a genuine shared-element animation (via Framer Motion), not two unrelated fade transitions that happen to occur near each other.
+
+Every queued item shows the **actual callback's code**, truncated to fit its box, not just the name of the API that scheduled it, so two pending `process.nextTick` calls (for example) are visually distinguishable from each other. Hover the small "i" icon on any item to see the full, untruncated callback alongside the call that queued it. Queues always lay out horizontally, oldest-to-newest left-to-right, scrolling on the x-axis rather than wrapping, so that ordering is never ambiguous.
 
 ### Event Loop panel
 
@@ -191,7 +198,9 @@ Two things in Node.js mode are genuinely real, not simulated:
 - **Poll is a real `fs.readFile`**, dispatched to Node's actual libuv thread pool and raced against any other in-flight reads with `Promise.race`. Multiple pending I/O operations complete in whatever order the real thread pool actually finishes them in, never an order this tool decides in advance.
 - **Check correctly drains nested `setImmediate` calls in the same pass.** A `setImmediate` scheduled from inside another `setImmediate` callback runs in that same Check-phase pass, not the next loop iteration, matching real Node's behavior exactly (verified against real Node terminal output for the same script).
 
-`process.nextTick` and the Promise/microtask queue are cross-cutting, not phases of their own, so they're drawn once as a central **Microtask Hub** inside the ring rather than off to the side. The hub visibly flashes on every real drain event, matching how often it actually drains (between *every* callback), not once per phase, which is the detail most explanations of this get wrong.
+`process.nextTick` and the Promise/microtask queue are cross-cutting, not phases of their own, so they're drawn once as a central **Microtask Hub** inside the ring rather than off to the side. The hub visibly flashes on every real drain event, matching how often it actually drains (between *every* callback), not once per phase, which is the detail most explanations of this get wrong. Its nextTick/Promise split is resizable, same as every other split in the app.
+
+The ring's **Timers** chip *is* the Pending Timers queue, not a separate panel elsewhere: a `setTimeout` callback lives in that same one chip whether it's still waiting for its delay to elapse or ready and about to run, since those are two moments of the same underlying queue, not two different stores. Every phase chip's callback preview follows the same pattern as the queue panels: real callback code, truncated, with an "i" tooltip for the full source.
 
 Re-running "Visualize Event Loop" on an already-open panel preserves whichever mode you were in.
 
@@ -201,7 +210,7 @@ A theme toggle next to the mode switch. The preference is remembered across sess
 
 ### Resizable panels
 
-Every panel — Source, Console, Call Stack, Heap, Event Loop, Web APIs, Microtask/Macrotask Queue, and the whole Node-mode phase diagram as one block — can be resized by dragging the divider between panels. Sizes persist across reloads. A **Reset Layout** button in the header restores every panel to its default size in one click.
+Every panel — Source, Console, Call Stack, Heap, Event Loop, Web APIs, Microtask/Macrotask Queue, the whole Node-mode phase diagram as one block, and the Microtask Hub's internal nextTick/Promise split — can be resized by dragging the divider between panels. Sizes persist across reloads. A **Reset Layout** button in the header restores every panel to its default size in one click.
 
 ---
 
