@@ -49,11 +49,6 @@
         "command": "eventloop-studio.showAstSummary",
         "title": "Show Parsed AST (JSON)",
         "category": "EventLoop Studio"
-      },
-      {
-        "command": "eventloop-studio.helloDeveloper",
-        "title": "Hello Developer",
-        "category": "EventLoop Studio"
       }
     ],
     "menus": {

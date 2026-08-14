@@ -83,5 +83,4 @@ export type WebviewToHostMessage =
 export const COMMANDS = {
   visualize: 'eventloop-studio.visualize',
   showAst: 'eventloop-studio.showAstSummary',
-  helloDeveloper: 'eventloop-studio.helloDeveloper',
 } as const;

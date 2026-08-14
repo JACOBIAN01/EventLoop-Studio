@@ -8,9 +8,6 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context)),
     vscode.commands.registerCommand(COMMANDS.showAst, () => showAstSummary()),
-    vscode.commands.registerCommand(COMMANDS.helloDeveloper, () => {
-      vscode.window.showInformationMessage('Hello Subhadeep');
-    }),
   );
 }
 
