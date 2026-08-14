@@ -71,7 +71,40 @@ export function instrument(sourceCode: string): string {
     FunctionDeclaration: wrapFunctionBody,
     FunctionExpression: wrapFunctionBody,
     ArrowFunctionExpression: wrapFunctionBody,
+    CallExpression: tagSchedulerCallbackArgs,
   });
+
+  // Stamps an inline callback passed directly to a known scheduling API (process.nextTick,
+  // setTimeout, setImmediate, queueMicrotask, .then/.catch/.finally) with its own original,
+  // pre-instrumentation source text, via __trace.tag(<fn>, "<src>") — a drop-in expression
+  // wrapper, safe here specifically because a call argument is always an expression position,
+  // never a declaration. Must read the snippet from the untouched `sourceCode`, before
+  // wrapFunctionBody's insertions turn it into a __trace.enter/try/finally-laden body; the
+  // recorder needs this to show *what the user actually wrote* in the queue panels, not the
+  // rewritten internals. A callback passed by reference (an Identifier, not a literal) is left
+  // alone — the recorder falls back to that function's own name instead (see sandbox.ts).
+  function tagSchedulerCallbackArgs(node: any) {
+    const callee = describeCallee(node.callee);
+    const isSchedulerCall =
+      callee === 'process.nextTick' ||
+      callee === 'setTimeout' ||
+      callee === 'setImmediate' ||
+      callee === 'queueMicrotask' ||
+      callee.endsWith('.then') ||
+      callee.endsWith('.catch') ||
+      callee.endsWith('.finally');
+    if (!isSchedulerCall) {
+      return;
+    }
+    for (const arg of node.arguments as any[]) {
+      if (arg.type !== 'FunctionExpression' && arg.type !== 'ArrowFunctionExpression') {
+        continue;
+      }
+      const snippet = sourceCode.slice(arg.start, arg.end).replace(/\s+/g, ' ').trim();
+      insert(arg.start, '__trace.tag(', 1);
+      insert(arg.end, `, ${JSON.stringify(snippet)})`, 1);
+    }
+  }
 
   // Line + Heap markers: Program-level statements, plus the direct statements of every
   // block-bodied function (one level deep — not recursing into nested if/for/while blocks).

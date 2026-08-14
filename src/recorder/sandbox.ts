@@ -97,6 +97,19 @@ export async function recordTrace(
     heapSet(name: string, value: unknown) {
       push('heap-set', { label: name, detail: formatValue(value) });
     },
+    // Stamps a callback with the ORIGINAL (pre-instrumentation) source text of the function
+    // literal `instrument.ts` found it wrapping, since by the time a scheduling function like
+    // process.nextTick actually receives this callback, `fn.toString()` would otherwise return
+    // the rewritten body full of __trace.enter/try/finally scaffolding — exactly the kind of
+    // internal noise this tool shouldn't surface. Only inline function-literal arguments to a
+    // known scheduling call get tagged (see instrument.ts); a callback passed by reference falls
+    // back to its name in describeCallback below.
+    tag(fn: unknown, src: string) {
+      if (typeof fn === 'function') {
+        (fn as { __srcPreview?: string }).__srcPreview = src;
+      }
+      return fn;
+    },
   };
 
   function consoleMethod(methodLabel: string) {
@@ -113,7 +126,11 @@ export async function recordTrace(
     const id = timerIdCounter++;
     const seq = timerSeq++;
     const label = `setTimeout (${delay}ms)`;
-    const scheduleStepId = push('schedule-timer', { label, detail: `${delay}ms` });
+    // setTimeout(...) itself is a real, synchronous call — it belongs on the Call Stack too,
+    // just like console.log. Only the *callback* it registers goes into the timer queue; it
+    // doesn't run until its own turn.
+    push('push-stack', { label });
+    const scheduleStepId = push('schedule-timer', { label, detail: describeCallback(callback) });
     pendingTimers.push({
       id,
       seq,
@@ -122,6 +139,7 @@ export async function recordTrace(
       scheduleStepId,
       callback: () => callback(...extraArgs),
     });
+    push('pop-stack', { label });
     return id;
   }
 
@@ -135,15 +153,19 @@ export async function recordTrace(
   function fakeNextTick(callback: (...a: unknown[]) => void, ...extraArgs: unknown[]) {
     const id = nodeApiSeq++;
     const label = 'process.nextTick(...)';
-    const scheduleStepId = push('schedule-nexttick', { label });
+    push('push-stack', { label });
+    const scheduleStepId = push('schedule-nexttick', { label, detail: describeCallback(callback) });
     pendingNextTicks.push({ id, seq: id, delay: 0, label, scheduleStepId, callback: () => callback(...extraArgs) });
+    push('pop-stack', { label });
   }
 
   function fakeSetImmediate(callback: (...a: unknown[]) => void, ...extraArgs: unknown[]) {
     const id = nodeApiSeq++;
     const label = 'setImmediate(...)';
-    const scheduleStepId = push('schedule-immediate', { label });
+    push('push-stack', { label });
+    const scheduleStepId = push('schedule-immediate', { label, detail: describeCallback(callback) });
     pendingImmediates.push({ id, seq: id, delay: 0, label, scheduleStepId, callback: () => callback(...extraArgs) });
+    push('pop-stack', { label });
     return id;
   }
 
@@ -155,11 +177,16 @@ export async function recordTrace(
   function fakeReadFileReal(label: string, callback?: (...a: unknown[]) => void) {
     const id = nodeApiSeq++;
     const stepLabel = `readFileReal(${JSON.stringify(label)})`;
-    const scheduleStepId = push('schedule-io', { label: stepLabel, detail: 'real libuv thread pool' });
+    push('push-stack', { label: stepLabel });
+    const scheduleStepId = push('schedule-io', {
+      label: stepLabel,
+      detail: describeCallback(callback) ?? 'real libuv thread pool',
+    });
     const waitFor = new Promise<void>((resolve) => {
       fs.readFile(fileName || __filename, () => resolve());
     });
     pendingIO.push({ id, seq: id, delay: 0, label: stepLabel, scheduleStepId, callback: () => callback?.(), waitFor });
+    push('pop-stack', { label: stepLabel });
   }
 
   // Models the category of deferred system-level callbacks (e.g. a TCP ECONNREFUSED) that the
@@ -167,8 +194,10 @@ export async function recordTrace(
   function fakeSimulateSystemCallback(label: string, delay = 0, callback?: (...a: unknown[]) => void) {
     const id = nodeApiSeq++;
     const stepLabel = `simulateSystemCallback(${JSON.stringify(label)})`;
-    const scheduleStepId = push('schedule-syscallback', { label: stepLabel, detail: `${delay}ms` });
+    push('push-stack', { label: stepLabel });
+    const scheduleStepId = push('schedule-syscallback', { label: stepLabel, detail: describeCallback(callback) });
     pendingSystemCallbacks.push({ id, seq: id, delay, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+    push('pop-stack', { label: stepLabel });
   }
 
   function fakeCreateHandle(label: string) {
@@ -177,8 +206,10 @@ export async function recordTrace(
       close(callback?: (...a: unknown[]) => void) {
         const id = nodeApiSeq++;
         const stepLabel = `${handleLabel}.close()`;
-        const scheduleStepId = push('schedule-close', { label: stepLabel });
+        push('push-stack', { label: stepLabel });
+        const scheduleStepId = push('schedule-close', { label: stepLabel, detail: describeCallback(callback) });
         pendingCloseCallbacks.push({ id, seq: id, delay: 0, label: stepLabel, scheduleStepId, callback: () => callback?.() });
+        push('pop-stack', { label: stepLabel });
       },
     };
   }
@@ -187,7 +218,7 @@ export async function recordTrace(
     if (typeof callback !== 'function') {
       return callback;
     }
-    const scheduleStepId = push('schedule-microtask', { label });
+    const scheduleStepId = push('schedule-microtask', { label, detail: describeCallback(callback) });
     return (...args: unknown[]) => {
       push('run-microtask', { label, refId: scheduleStepId });
       // Synthetic wrapper frame, mirroring the timer driver below: explicitly carries
@@ -233,14 +264,24 @@ export async function recordTrace(
     `(function () {
       var originalThen = Promise.prototype.then;
       Promise.prototype.then = function (onFulfilled, onRejected) {
-        return originalThen.call(
-          this,
-          __wrapMicrotask(onFulfilled, 'Promise.then'),
-          __wrapMicrotask(onRejected, 'Promise.catch')
-        );
+        __trace.enter('Promise.then(...)');
+        try {
+          return originalThen.call(
+            this,
+            __wrapMicrotask(onFulfilled, 'Promise.then'),
+            __wrapMicrotask(onRejected, 'Promise.catch')
+          );
+        } finally {
+          __trace.exit('Promise.then(...)');
+        }
       };
       globalThis.queueMicrotask = function (cb) {
-        return originalThen.call(Promise.resolve(), __wrapMicrotask(cb, 'queueMicrotask'));
+        __trace.enter('queueMicrotask(...)');
+        try {
+          return originalThen.call(Promise.resolve(), __wrapMicrotask(cb, 'queueMicrotask'));
+        } finally {
+          __trace.exit('queueMicrotask(...)');
+        }
       };
     })();`,
     context,
@@ -469,4 +510,25 @@ function formatValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/**
+ * Identifies which callback a schedule-* step is queuing, for display in the queue panels —
+ * without this, every pending `process.nextTick`/`setTimeout`/etc. entry shows the same generic
+ * API name and is indistinguishable from any other pending call to the same API. Whitespace is
+ * collapsed so a multi-line callback body still reads as one line; the full (untruncated) string
+ * is kept here, visual truncation is a UI concern (see QueueList's `truncate` + `title`).
+ */
+function describeCallback(fn: unknown): string | undefined {
+  if (typeof fn !== 'function') {
+    return undefined;
+  }
+  const tagged = (fn as { __srcPreview?: string }).__srcPreview;
+  if (typeof tagged === 'string') {
+    return tagged;
+  }
+  if ((fn as Function).name) {
+    return `${(fn as Function).name}()`;
+  }
+  return (fn as Function).toString().replace(/\s+/g, ' ').trim();
 }
