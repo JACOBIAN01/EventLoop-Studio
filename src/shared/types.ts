@@ -49,6 +49,13 @@ export interface ExecutionStep {
    * label (e.g. two `setTimeout(fn, 0)` calls), so the UI must pair by this id, not by label text.
    */
   refId?: number;
+  /**
+   * 'run-timer' only: true when this 0ms timer resolved in the very first Timers phase pass
+   * while a setImmediate was also already pending, real Node's one genuinely undocumented race
+   * (top-level setTimeout(fn, 0) vs. setImmediate). Lets the UI flag the ambiguity instead of
+   * implying this specific ordering is a rule.
+   */
+  ambiguous?: boolean;
 }
 
 export interface Trace {

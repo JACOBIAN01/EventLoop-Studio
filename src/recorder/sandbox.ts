@@ -372,8 +372,15 @@ export async function recordTrace(
       }
 
       push('enter-phase', { label: 'Timers', detail: 'timers' });
+      // Real Node's own genuinely undocumented race: a 0ms setTimeout registered at the top
+      // level competes with a top-level setImmediate, and which one wins depends on real
+      // wall-clock timing this simulator doesn't model. Only true on this loop's very first
+      // pass, before either queue has had a callback add more work to it.
+      const timersRaceAmbiguous = phaseIterations === 1 && pendingImmediates.length > 0;
       for (const timer of takeAllSorted(pendingTimers)) {
-        await runPhaseCallback(timer, 'timer-ready', 'run-timer');
+        await runPhaseCallback(timer, 'timer-ready', 'run-timer', {
+          ambiguous: timersRaceAmbiguous && timer.delay === 0,
+        });
       }
 
       push('enter-phase', { label: 'Pending Callbacks', detail: 'pending-callbacks' });
@@ -456,12 +463,12 @@ export async function recordTrace(
     item: PendingCallback,
     readyKind: StepKind | null,
     runKind: StepKind,
-    opts: { skipDrain?: boolean } = {},
+    opts: { skipDrain?: boolean; ambiguous?: boolean } = {},
   ) {
     if (readyKind) {
       push(readyKind, { label: item.label, refId: item.scheduleStepId });
     }
-    push(runKind, { label: item.label, refId: item.scheduleStepId });
+    push(runKind, { label: item.label, refId: item.scheduleStepId, ambiguous: opts.ambiguous || undefined });
     // No synthetic "... handler" frame — see wrapMicrotaskCallback's comment above.
     pendingHandlerRefId = item.scheduleStepId;
     try {
