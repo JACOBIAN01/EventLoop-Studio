@@ -15,7 +15,7 @@
 
 ## Creator
 
-Built by **Subhadeep Ghorai**, an SDE and Instructor at Newton School of Technology. This extension grew out of watching the same event loop confusion come up again and again while teaching, and deciding it deserved something you can actually run and watch instead of just a diagram.
+Built by **Subhadeep Ghorai**, SDE and Instructor at Newton School of Technology. This extension grew out of watching the same event loop confusion come up again and again while teaching, and deciding it deserved something you can actually run and watch instead of just a diagram.
 
 Made for JavaScript developers, students, and anyone preparing for an interview who wants to *see* why a `setTimeout` runs after three promises they were sure would go last.
 
@@ -102,7 +102,7 @@ Or, from within VS Code:
 
 ### Option 2: VS Code Marketplace
 
-`[TODO: add Marketplace listing URL once eventloop-studio is published]`
+https://marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio
 
 ### Requirements
 
@@ -110,7 +110,7 @@ Or, from within VS Code:
 |---|---|
 | VS Code version | `^1.85.0` or later |
 | Operating system | No OS-specific code paths; no native/binary dependencies |
-| Runtime dependencies | None to install separately — `acorn`, `acorn-walk`, `react`, `framer-motion`, `react-resizable-panels` are bundled into `out/` at build time |
+| Runtime dependencies | None to install separately : `acorn`, `acorn-walk`, `react`, `framer-motion`, `react-resizable-panels` are bundled into `out/` at build time |
 | Reload after install/update | Yes, standard for any VS Code extension install |
 
 ---
@@ -126,12 +126,17 @@ Or, from within VS Code:
 5. Watch the highlighted source line and the Call Stack / queue panels
    update together, and read the caption at the bottom for the "why."
 ```
+## Browser Mode
 
-<!-- SCREENSHOT: Editor title bar with the Visualize Event Loop toolbar icon highlighted -->
+<img width="1387" height="799" alt="Screenshot 2026-08-15 at 4 49 22 PM" src="https://github.com/user-attachments/assets/42048f45-7bdc-4da2-b7cd-a63032cfb04a" />
+
+## NodeJS Mode
+
+<img width="1390" height="806" alt="Screenshot 2026-08-15 at 4 50 09 PM" src="https://github.com/user-attachments/assets/ccb8520c-154e-4434-8a1c-3a5166aea4dd" />
 
 Concrete example — open `samples/01-classic-ordering.js` and run **Visualize Event Loop**. You'll see `console.log` calls land on the Call Stack immediately, a `Promise.then()` callback queue into the Microtask Queue, and a `setTimeout` callback travel from Web APIs into the Macrotask Queue only after the microtask queue is empty.
 
-<!-- SCREENSHOT: Visualize Event Loop panel showing Call Stack, Microtask Queue, and Macrotask Queue mid-replay -->
+<img width="1390" height="804" alt="Screenshot 2026-08-15 at 4 50 57 PM" src="https://github.com/user-attachments/assets/de7d88ed-69f1-4a9e-ae2c-87d799b51c08" />
 
 ---
 
@@ -149,7 +154,6 @@ Concrete example — open `samples/01-classic-ordering.js` and run **Visualize E
 
 **Result:** the exact step where a microtask or macrotask ran ahead of (or behind) expectation, with a caption explaining the rule that produced it.
 
-<!-- SCREENSHOT: Console panel next to Event Loop panel mid-divergence -->
 
 ### Workflow: Compare Browser vs. Node.js event loop models
 
@@ -162,7 +166,8 @@ Concrete example — open `samples/01-classic-ordering.js` and run **Visualize E
 
 **Result:** the Microtask Hub flashes between phases exactly as often as it actually drains, and the Check phase visibly re-drains a `setImmediate` scheduled from inside another one, in the same pass.
 
-<!-- SCREENSHOT: Node.js mode ring diagram with an active phase highlighted -->
+<img width="917" height="629" alt="Screenshot 2026-08-15 at 4 52 34 PM" src="https://github.com/user-attachments/assets/c583ea29-0fa9-45ce-bb31-9cebb79aefd9" />
+
 
 ### Workflow: Inspect the parsed structure of a file
 
