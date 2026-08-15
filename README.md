@@ -102,7 +102,7 @@ Microtask Hub draining `process.nextTick` and Promise callbacks between every ph
 **From a `.vsix` file** (a specific release build instead of whatever's currently live):
 
 ```bash
-code --install-extension eventloop-studio-0.3.3.vsix
+code --install-extension eventloop-studio-0.3.4.vsix
 ```
 
 Or via the Command Palette: run **Extensions: Install from VSIX...** and select the file.
@@ -391,9 +391,9 @@ welcome via GitHub Issues.
 
 ## What's New
 
-**0.3.3**: Replaced the extension icon with a sharper 256x256 version; added Browser/Node.js
-mode demo GIFs and in-context screenshots; switched to a live Marketplace version/install badge;
-corrected the Installation section now that the extension is actually published.
+**0.3.4**: Rewrote the README to a more structured, professionally documented format, including
+an Execution Model section classifying every behavior as Real / Instrumented / Simulated;
+compressed both demo GIFs for faster loading (77%/69% smaller, no loss in color fidelity).
 
 Full history in [CHANGELOG.md](CHANGELOG.md).
 

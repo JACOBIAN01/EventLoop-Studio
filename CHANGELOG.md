@@ -4,6 +4,25 @@ All notable changes to EventLoop Studio are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.4] - 2026-08-16
+
+### Documentation
+
+- **Rewrote README.md from scratch** to a more structured, professionally documented format:
+  a comparison table against traditional visualizers, a dedicated Execution Model section
+  classifying every behavior as Real / Instrumented / Simulated (verified against the recorder
+  source), a Browser vs. Node.js capability table, Problem/Cause/Solution troubleshooting
+  entries, and an explicit note distinguishing the `vm` sandbox's execution isolation from a
+  hardened security boundary. Every technical claim, command, and asset path was re-verified
+  against the current source and `package.json` rather than carried over from the previous draft.
+
+### Changed
+
+- **Compressed both demo GIFs** for faster loading on the Marketplace page and README: reduced
+  to 4fps and trimmed to their first 20 seconds. `browser_demo.gif` is 77% smaller (3.58 MB to
+  832 KB) and `node_demo.gif` is 69% smaller (3.36 MB to 1.04 MB), with no change to color
+  fidelity (palette-based encoding, not a lossy video format).
+
 ## [0.3.3] - 2026-08-15
 
 ### Changed
