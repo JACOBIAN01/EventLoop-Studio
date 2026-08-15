@@ -287,28 +287,8 @@ export function NodePhaseTrack({
             the other two are pass-through joins, matching how the other long connectors only
             mark the phase they're arriving at, not every bend along the way. */}
         <LongConnector orientation="horizontal" col="1 / 6" row="5" rotation={0} showArrowhead={false} />
-        {/* Spans the full row1-row5 range (not just the row2-4 middle, like Poll->Check's
-            connector) so it actually crosses the two horizontal segments above, at each one's
-            own vertical center, instead of stopping short at their row's edge. */}
-        <LongConnector orientation="vertical" col="1" row="1 / 6" rotation={0} showArrowhead={false} />
+        <LongConnector orientation="vertical" col="1" row="2 / 5" rotation={0} showArrowhead={false} />
         <LongConnector orientation="horizontal" col="1 / 2" row="1" rotation={0} />
-        {/* A small round joint at each turn, softening the sharp right angle where the
-            horizontal and vertical segments above cross — same small-dot language already used
-            for the "you are here" pointer, just stationary here. */}
-        <span
-          aria-hidden="true"
-          style={{ gridColumn: 1, gridRow: 5 }}
-          className="pointer-events-none flex items-center justify-center"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-        </span>
-        <span
-          aria-hidden="true"
-          style={{ gridColumn: 1, gridRow: 1 }}
-          className="pointer-events-none flex items-center justify-center"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-slate-300" />
-        </span>
 
         {PHASES.map((def) => {
           const isIdlePrepareChip = def.phase === 'idle-prepare';
