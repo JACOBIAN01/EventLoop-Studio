@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import type { ExecutionStep } from '../../../src/shared/types';
 import type { PlaybackState, Speed } from '../state/usePlayback';
 
@@ -61,13 +62,25 @@ export function Controls({ playback, stepCount, steps }: ControlsProps) {
             <button
               key={s}
               type="button"
-              className={
-                s === speed
-                  ? 'bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white'
-                  : 'bg-surface px-2.5 py-1.5 text-xs text-slate-500 transition-colors hover:bg-slate-50'
-              }
+              // relative + z-10: the active pill below is absolutely positioned inside whichever
+              // button is currently active, so its own text needs to sit visually on top of it.
+              className={`relative z-10 px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                s === speed ? 'text-white' : 'bg-surface text-slate-500 hover:bg-slate-50'
+              }`}
               onClick={() => setSpeed(s)}
+              aria-pressed={s === speed}
             >
+              {/* Same shared-element technique as the phase ring's "you are here" pointer: one
+                  layoutId, conditionally rendered inside whichever button is active, so Framer
+                  Motion animates a slide between button positions instead of an instant color
+                  swap when speed changes. */}
+              {s === speed && (
+                <motion.span
+                  layoutId="speed-active-pill"
+                  className="absolute inset-0 -z-10 bg-indigo-600"
+                  transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                />
+              )}
               {s}x
             </button>
           ))}
