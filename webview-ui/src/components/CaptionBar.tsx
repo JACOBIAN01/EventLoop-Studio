@@ -35,7 +35,10 @@ export function CaptionBar({ caption, captionsEnabled, onToggle }: CaptionBarPro
 
       <InfoDot
         label="About the EventLoop Guide"
-        text={'Click "EventLoop Guide" to toggle step explanations on and off. The core event loop rules stay visible either way, so you won\'t lose the important parts.'}
+        text={
+          'Click "EventLoop Guide" to toggle step explanations on and off. The core event loop rules stay visible either way, so you won\'t lose the important parts.\n\n' +
+          "At the very top of a script, whether a 0ms setTimeout or a setImmediate fires first depends on how much real time has passed before the event loop starts, not on any fixed rule. Node's documentation explicitly calls this ordering undefined at the top level (inside an I/O callback, setImmediate always wins, with no ambiguity there). This simulator resolves it one consistent way so replay stays reproducible. If your terminal shows the opposite order, neither one is wrong; you're seeing the same real non-determinism Node has always had."
+        }
       />
 
       <div className="min-h-5 min-w-0 flex-1">
