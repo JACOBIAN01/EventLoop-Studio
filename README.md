@@ -10,12 +10,9 @@
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 [![Issues](https://img.shields.io/badge/issues-GitHub-lightgrey)](https://github.com/JACOBIAN01/EventLoop-Studio/issues)
 
-<table>
-<tr>
-<td align="center" width="50%"><b>Browser mode</b><br><img src="media/browser_demo.gif" width="420" alt="EventLoop Studio Browser mode demo" /></td>
-<td align="center" width="50%"><b>Node.js mode</b><br><img src="media/node_demo.gif" width="420" alt="EventLoop Studio Node.js mode demo" /></td>
-</tr>
-</table>
+<p><b>Browser mode</b><br><img src="media/browser_demo.gif" width="640" alt="EventLoop Studio Browser mode demo" /></p>
+
+<p><b>Node.js mode</b><br><img src="media/node_demo.gif" width="640" alt="EventLoop Studio Node.js mode demo" /></p>
 
 </div>
 
