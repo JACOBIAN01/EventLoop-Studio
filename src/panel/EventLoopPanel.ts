@@ -38,6 +38,11 @@ export class EventLoopPanel {
       },
     );
 
+    panel.iconPath = {
+      light: vscode.Uri.joinPath(extensionUri, 'media', 'toolbar-light.png'),
+      dark: vscode.Uri.joinPath(extensionUri, 'media', 'toolbar-dark.png'),
+    };
+
     EventLoopPanel.current = new EventLoopPanel(panel, extensionUri, onRequestTrace);
     return EventLoopPanel.current;
   }
