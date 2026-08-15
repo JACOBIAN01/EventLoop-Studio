@@ -428,30 +428,15 @@ export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
             </button>
           </div>
 
-          <div className="flex flex-none items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
-            <button
-              type="button"
-              onClick={() => setThemeAndPersist('light')}
-              aria-pressed={theme === 'light'}
-              title="Light theme"
-              className={`rounded-[5px] px-2 py-1 transition-colors ${
-                theme === 'light' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Light
-            </button>
-            <button
-              type="button"
-              onClick={() => setThemeAndPersist('dark')}
-              aria-pressed={theme === 'dark'}
-              title="Dark theme"
-              className={`rounded-[5px] px-2 py-1 transition-colors ${
-                theme === 'dark' ? 'bg-surface text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-            >
-              Dark
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setThemeAndPersist(theme === 'light' ? 'dark' : 'light')}
+            aria-pressed={theme === 'dark'}
+            title={theme === 'light' ? 'Switch to dark theme' : 'Switch to light theme'}
+            className="flex flex-none items-center justify-center rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[13px] transition-colors hover:bg-surface"
+          >
+            {theme === 'light' ? '☀' : '☾'}
+          </button>
 
           <button
             type="button"
