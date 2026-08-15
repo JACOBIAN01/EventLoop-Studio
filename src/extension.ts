@@ -8,6 +8,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(COMMANDS.visualize, () => visualizeEventLoop(context)),
     vscode.commands.registerCommand(COMMANDS.showAst, () => showAstSummary()),
+    vscode.workspace.onDidSaveTextDocument((document) => reRecordOnSave(document)),
   );
 }
 
@@ -43,6 +44,27 @@ async function visualizeEventLoop(context: vscode.ExtensionContext, modeOverride
   );
   const mode = modeOverride ?? panel.currentMode;
   const trace = await recordTrace(document.getText(), document.fileName, mode);
+  panel.postTrace(trace);
+}
+
+/**
+ * Auto-refreshes the open panel when its visualized file is saved, so the user doesn't have to
+ * close/reopen or manually re-run the command after every edit. Deliberately narrower than
+ * visualizeEventLoop: it never creates or reveals a panel (a background save shouldn't pop one
+ * open or steal focus), and a save that fails to parse doesn't blank the panel via postTrace —
+ * it's flagged via notifyStaleSource instead, leaving whatever last worked on screen.
+ */
+async function reRecordOnSave(document: vscode.TextDocument) {
+  const panel = EventLoopPanel.current;
+  if (!panel || !lastVisualizedDocument || document.uri.toString() !== lastVisualizedDocument.uri.toString()) {
+    return;
+  }
+
+  const trace = await recordTrace(document.getText(), document.fileName, panel.currentMode);
+  if (trace.error) {
+    panel.notifyStaleSource(trace.error);
+    return;
+  }
   panel.postTrace(trace);
 }
 

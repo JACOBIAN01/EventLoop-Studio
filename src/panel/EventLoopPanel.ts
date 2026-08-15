@@ -3,7 +3,8 @@ import * as crypto from 'crypto';
 import { HostToWebviewMessage, Trace, WebviewToHostMessage } from '../shared/types';
 
 export class EventLoopPanel {
-  private static current: EventLoopPanel | undefined;
+  /** Public so extension.ts's save listener can check "is a panel open" without creating one. */
+  static current: EventLoopPanel | undefined;
 
   private readonly panel: vscode.WebviewPanel;
   private readonly disposables: vscode.Disposable[] = [];
@@ -79,6 +80,11 @@ export class EventLoopPanel {
     this.lastTrace = trace;
     this.currentMode = trace.mode;
     this.send({ type: 'trace', payload: trace });
+  }
+
+  /** Auto-save re-record failed to parse: keep whatever's already showing, just flag it. */
+  notifyStaleSource(message: string): void {
+    this.send({ type: 'staleSource', message });
   }
 
   private send(message: HostToWebviewMessage): void {
