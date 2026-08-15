@@ -4,6 +4,21 @@ All notable changes to EventLoop Studio are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.2] - 2026-08-15
+
+### Added
+
+- **The ambiguous top-level `setTimeout(fn, 0)` vs. `setImmediate` race is now explained in the
+  EventLoop Guide's own info tooltip**, not only in the Timers phase chip's hover tooltip. It's a
+  permanent, always-findable caveat now, not something you only see if you happen to hover the
+  right chip in Node mode.
+
+### Fixed
+
+- The EventLoop Studio panel's editor tab showed VS Code's generic default file icon instead of
+  the extension's own icon, indistinguishable from any other open tab at a glance. The panel now
+  reuses the same light/dark toolbar icon already shipped for its editor-title button.
+
 ## [0.3.1] - 2026-08-14
 
 ### Added
