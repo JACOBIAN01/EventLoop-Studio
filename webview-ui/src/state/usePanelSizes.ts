@@ -15,7 +15,10 @@ export type LayoutMap = Record<string, Layout>;
  * a fixed-px layout to percentage-of-container has no single "correct" answer.
  */
 export const DEFAULT_LAYOUTS: LayoutMap = {
-  main: { left: 54.5, right: 45.5 },
+  // Right column needs enough width for all 6 Node-mode phase chips to fit without horizontal
+  // scrolling; 54.5/45.5 was too narrow for that. Shared with Browser mode too (one group, no
+  // Node-only variant today), but a wider right column doesn't cost Browser mode anything.
+  main: { left: 38, right: 62 },
   leftColumn: { source: 58.3, console: 41.7 },
   browserRight: { browserRow1: 37.1, browserRow2: 31.4, browserRow3: 31.4 },
   browserRow1: { callStack: 50, heap: 50 },
