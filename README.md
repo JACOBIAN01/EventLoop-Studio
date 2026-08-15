@@ -19,8 +19,6 @@ Built by **Subhadeep Ghorai**, an SDE and Instructor at Newton School of Technol
 
 Made for JavaScript developers, students, and anyone preparing for an interview who wants to *see* why a `setTimeout` runs after three promises they were sure would go last.
 
-**Portfolio:** [subhadeep-ghorai.vercel.app](https://subhadeep-ghorai.vercel.app)
-
 ---
 
 `console.log` order in your terminal rarely matches the order you expected while writing the code. EventLoop Studio answers "why did that run in that order" by actually executing your `.js` file in a sandboxed environment, recording every call-stack push/pop, timer registration, and promise scheduling event, then replaying that recording as a step-by-step diagram next to your source.
