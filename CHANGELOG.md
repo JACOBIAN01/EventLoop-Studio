@@ -31,6 +31,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   Poll -> Check and Check -> Close Callbacks jumps already looked, instead of 3 disconnected
   arrowheads.
 
+### Documentation
+
+- Added Browser mode and Node.js mode demo GIFs to the README, plus in-context screenshots
+  throughout the Quick Start and Usage sections.
+- Replaced the static, hand-typed version badge with a live Marketplace version/install-count
+  badge, so it can no longer drift out of sync with the actual published version.
+- Corrected the Installation section, which still claimed the extension "is not yet listed on the
+  VS Code Marketplace" after it had already been published; Marketplace install is now listed as
+  the primary option, `.vsix` install as the secondary one for a specific release build.
+
 ### Fixed
 
 - The EventLoop Studio panel's editor tab showed VS Code's generic default file icon instead of

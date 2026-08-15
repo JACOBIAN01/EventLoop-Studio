@@ -5,9 +5,17 @@
 **Watch your own JavaScript actually run: call stack, heap, timers, microtasks, and the event loop, one step at a time.**
 
 ![VS Code Engine](https://img.shields.io/badge/VS%20Code-%5E1.85.0-blue)
-![Version](https://img.shields.io/badge/version-0.3.1-informational)
+[![Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/SubhadeepGhorai.eventloop-studio?label=marketplace&color=informational)](https://marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio)
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/SubhadeepGhorai.eventloop-studio)](https://marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio)
 ![License](https://img.shields.io/badge/license-Proprietary-red)
 [![Issues](https://img.shields.io/badge/issues-GitHub-lightgrey)](https://github.com/JACOBIAN01/EventLoop-Studio/issues)
+
+<table>
+<tr>
+<td align="center" width="50%"><b>Browser mode</b><br><img src="media/browser_demo.gif" width="420" alt="EventLoop Studio Browser mode demo" /></td>
+<td align="center" width="50%"><b>Node.js mode</b><br><img src="media/node_demo.gif" width="420" alt="EventLoop Studio Node.js mode demo" /></td>
+</tr>
+</table>
 
 </div>
 
@@ -85,24 +93,26 @@ What distinguishes this from a diagram: the Heap panel re-snapshots variable val
 
 ## Installation
 
-### Option 1: `.vsix` file (current distribution method)
+### Option 1: VS Code Marketplace
 
-This extension is not yet listed on the VS Code Marketplace. Install the packaged `.vsix` directly:
+[marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio](https://marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio)
+
+Or, from within VS Code: open the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X`), search for **EventLoop Studio**, and click **Install**.
+
+### Option 2: `.vsix` file
+
+For a specific release build instead of whatever's currently live:
 
 ```bash
-code --install-extension eventloop-studio-0.3.1.vsix
+code --install-extension eventloop-studio-0.3.2.vsix
 ```
 
 Or, from within VS Code:
 
 1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
 2. Run **Extensions: Install from VSIX...**
-3. Select the `eventloop-studio-0.3.1.vsix` file.
+3. Select the `eventloop-studio-0.3.2.vsix` file.
 4. Reload the window if VS Code doesn't prompt automatically.
-
-### Option 2: VS Code Marketplace
-
-https://marketplace.visualstudio.com/items?itemName=SubhadeepGhorai.eventloop-studio
 
 ### Requirements
 
