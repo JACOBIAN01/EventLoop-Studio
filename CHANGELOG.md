@@ -8,10 +8,28 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **The panel now auto-refreshes when you save the file you're visualizing.** Editing code no
+  longer means closing and reopening the panel, or manually re-running the command — saving is
+  enough. A save that fails to parse doesn't blank the panel: it keeps showing the last working
+  trace and flags it with a small warning dot next to the filename, instead of wiping out
+  whatever you were reviewing over an incidental typo.
+- **An "Update" button in the Source panel** for previewing unsaved edits on demand, for when you
+  want to see the effect of a change before committing to a save.
 - **The ambiguous top-level `setTimeout(fn, 0)` vs. `setImmediate` race is now explained in the
   EventLoop Guide's own info tooltip**, not only in the Timers phase chip's hover tooltip. It's a
   permanent, always-findable caveat now, not something you only see if you happen to hover the
   right chip in Node mode.
+
+### Changed
+
+- **The Light/Dark toggle is now a single sun/moon button** instead of two separate text buttons.
+- **The playback speed selector's active state now animates between speeds** instead of an
+  instant color swap.
+- **Node mode's default layout gives the phase-track ring enough width for all 6 phases to fit**
+  without needing to scroll horizontally to see Poll, Check, or Close Callbacks.
+- **The Close Callbacks -> Timers return path is now one connected line**, matching how the
+  Poll -> Check and Check -> Close Callbacks jumps already looked, instead of 3 disconnected
+  arrowheads.
 
 ### Fixed
 

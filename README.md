@@ -80,6 +80,7 @@ What distinguishes this from a diagram: the Heap panel re-snapshots variable val
 | **Node.js mode** | See the real six libuv phases (Timers, Pending Callbacks, Idle/Prepare, Poll, Check, Close Callbacks) in their fixed order, plus a central Microtask Hub for `process.nextTick`/Promises | A ring diagram with a single "you are here" pointer; Poll is a genuinely real `fs.readFile` raced against other pending reads |
 | **EventLoop Guide narration** | Understand *why* a step happened, not just that it happened | Deterministic, hand-written captions in two tiers: rule-level (always visible) and mechanical (toggle-able) |
 | **Resizable, persisted layout** | Give more room to whichever panel matters for the file you're debugging | Every split uses `react-resizable-panels`; sizes persist via `vscodeApi.setState()` |
+| **Auto-refresh on save** | Edit the file and see the update without closing/reopening the panel or re-running the command | Saving the visualized file re-records automatically; a save that fails to parse keeps showing the last working trace with a small warning instead of blanking the panel |
 | **Show Parsed AST (JSON)** | Inspect how the parser sees your file, independent of execution | Standalone command producing a flat JSON summary of variables, functions, calls, timers, and promise usage |
 
 ---
@@ -274,11 +275,12 @@ Check for an unconditional timer/interval loop in the script and add a stopping 
 
 ### Problem: The panel doesn't update after editing the file
 
-**Cause:** the panel replays a trace recorded at the moment you ran the command; it does not watch the file for changes.
+**Cause:** the panel auto-refreshes on save, so unsaved edits (or an editor with autosave off) won't show up until you save. If a small red warning dot appears next to the filename, your last save didn't parse — the panel is intentionally still showing the previous working version, not that save.
 
 **Solution:**
 ```text
-Re-run "Visualize Event Loop" after saving your edits
+Save the file (Ctrl/Cmd+S), or click "Update" in the Source panel header to preview
+unsaved edits immediately without saving
 ```
 
 ---
@@ -411,6 +413,10 @@ This project's [LICENSE](#license) does not grant permission to modify, merge, o
 ## Changelog
 
 Full history in [CHANGELOG.md](CHANGELOG.md). Recent highlights:
+
+**0.3.2**
+- Added: the panel auto-refreshes when you save the visualized file, plus a manual "Update" button in the Source panel for previewing unsaved edits on demand.
+- Changed: Light/Dark is now a single sun/moon toggle; the playback speed selector animates between speeds; Node mode's default layout fits all 6 phase chips without horizontal scrolling; the Close Callbacks -> Timers return path is one connected line instead of 3 disconnected arrowheads.
 
 **0.3.1**
 - Fixed: the top-level `setTimeout(fn, 0)` vs. `setImmediate` race is now flagged as ambiguous in the caption and a dedicated phase-chip tooltip, instead of silently resolved as if it were a rule.
