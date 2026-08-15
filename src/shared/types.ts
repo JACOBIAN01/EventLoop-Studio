@@ -80,7 +80,15 @@ export interface AstSummary {
 /** Messages sent from the extension host to the Webview. */
 export type HostToWebviewMessage =
   | { type: 'trace'; payload: Trace }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  /**
+   * Sent when auto-re-recording after a save fails to parse. Unlike 'trace', the webview must
+   * NOT replace its current trace with this: recordTrace returns an empty, error-only Trace on a
+   * parse failure, and swapping that in would blank the whole visualization over an incidental
+   * syntax error mid-edit. The webview keeps showing whatever it already has and just surfaces
+   * this as a small warning instead.
+   */
+  | { type: 'staleSource'; message: string };
 
 /** Messages sent from the Webview back to the extension host. */
 export type WebviewToHostMessage =

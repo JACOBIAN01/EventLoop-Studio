@@ -6,6 +6,8 @@ export interface InfoDotProps {
   label: string;
   /** Tooltip body text, shown on hover/focus. Free to wrap onto multiple lines. */
   text: string;
+  /** 'warning' swaps the glyph and color for flagging a problem (e.g. a stale source), rather than offering a definition. Defaults to the plain "i" look. */
+  variant?: 'info' | 'warning';
 }
 
 const TOOLTIP_WIDTH = 224; // px, matches the old w-56
@@ -21,9 +23,10 @@ const VIEWPORT_MARGIN = 8;
  * past its box, which is exactly what happened once panels got narrow enough to resize. A
  * `position: fixed` element rendered outside that tree entirely isn't subject to it.
  */
-export function InfoDot({ label, text }: InfoDotProps) {
+export function InfoDot({ label, text, variant = 'info' }: InfoDotProps) {
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const isWarning = variant === 'warning';
 
   const show = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -44,10 +47,14 @@ export function InfoDot({ label, text }: InfoDotProps) {
       onMouseLeave={hide}
       onFocus={show}
       onBlur={hide}
-      className="inline-flex h-3.5 w-3.5 flex-none cursor-help items-center justify-center rounded-full border border-slate-300 text-[8px] font-bold text-slate-400 hover:border-indigo-400 hover:text-indigo-500"
+      className={`inline-flex h-3.5 w-3.5 flex-none cursor-help items-center justify-center rounded-full border text-[8px] font-bold ${
+        isWarning
+          ? 'border-red-300 text-red-500 hover:border-red-400 hover:text-red-600'
+          : 'border-slate-300 text-slate-400 hover:border-indigo-400 hover:text-indigo-500'
+      }`}
       aria-label={label}
     >
-      i
+      {isWarning ? '!' : 'i'}
       {coords &&
         createPortal(
           <div
