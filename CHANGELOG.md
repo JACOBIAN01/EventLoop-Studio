@@ -4,6 +4,25 @@ All notable changes to EventLoop Studio are documented in this file.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [0.3.3] - 2026-08-15
+
+### Changed
+
+- **Replaced the extension icon with a sharper 256x256 version.** The previous 128x128 PNG met
+  VS Code's documented minimum but didn't have enough pixel density to render crisply on the
+  Marketplace on any high-DPI display, where it was visibly blurry.
+
+### Documentation
+
+- Added Browser mode and Node.js mode demo GIFs to the README (stacked vertically), plus
+  in-context screenshots throughout the Quick Start and Usage sections.
+- Replaced the static, hand-typed version badge with a live Marketplace version/install-count
+  badge, so it can no longer drift out of sync with the actual published version.
+- Corrected the Installation section, which still claimed the extension "is not yet listed on the
+  VS Code Marketplace" after it had already been published; Marketplace install is now listed as
+  the primary option, `.vsix` install as the secondary one for a specific release build.
+- Removed the portfolio link from the Creator section.
+
 ## [0.3.2] - 2026-08-15
 
 ### Added
@@ -30,16 +49,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The Close Callbacks -> Timers return path is now one connected line**, matching how the
   Poll -> Check and Check -> Close Callbacks jumps already looked, instead of 3 disconnected
   arrowheads.
-
-### Documentation
-
-- Added Browser mode and Node.js mode demo GIFs to the README, plus in-context screenshots
-  throughout the Quick Start and Usage sections.
-- Replaced the static, hand-typed version badge with a live Marketplace version/install-count
-  badge, so it can no longer drift out of sync with the actual published version.
-- Corrected the Installation section, which still claimed the extension "is not yet listed on the
-  VS Code Marketplace" after it had already been published; Marketplace install is now listed as
-  the primary option, `.vsix` install as the secondary one for a specific release build.
 
 ### Fixed
 

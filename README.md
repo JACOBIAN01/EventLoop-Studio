@@ -101,14 +101,14 @@ Or, from within VS Code: open the Extensions view (`Ctrl+Shift+X` / `Cmd+Shift+X
 For a specific release build instead of whatever's currently live:
 
 ```bash
-code --install-extension eventloop-studio-0.3.2.vsix
+code --install-extension eventloop-studio-0.3.3.vsix
 ```
 
 Or, from within VS Code:
 
 1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
 2. Run **Extensions: Install from VSIX...**
-3. Select the `eventloop-studio-0.3.2.vsix` file.
+3. Select the `eventloop-studio-0.3.3.vsix` file.
 4. Reload the window if VS Code doesn't prompt automatically.
 
 ### Requirements
@@ -423,6 +423,10 @@ This project's [LICENSE](#license) does not grant permission to modify, merge, o
 ## Changelog
 
 Full history in [CHANGELOG.md](CHANGELOG.md). Recent highlights:
+
+**0.3.3**
+- Changed: replaced the extension icon with a sharper 256x256 version — the old 128x128 met VS Code's documented minimum but rendered blurry on the Marketplace on high-DPI displays.
+- Documentation: added Browser/Node.js mode demo GIFs and in-context screenshots, switched to a live Marketplace version/install-count badge, and corrected the Installation section now that the extension is actually published.
 
 **0.3.2**
 - Added: the panel auto-refreshes when you save the visualized file, plus a manual "Update" button in the Source panel for previewing unsaved edits on demand.

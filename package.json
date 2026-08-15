@@ -2,7 +2,7 @@
   "name": "eventloop-studio",
   "displayName": "EventLoop Studio",
   "description": "Visualize how JavaScript's call stack, queues, and event loop actually execute your code.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "publisher": "SubhadeepGhorai",
   "author": "JACOBIAN01",
   "license": "UNLICENSED",
