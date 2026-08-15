@@ -4,7 +4,7 @@ import { AstSummary } from '../shared/types';
 
 /**
  * Phase 4 deliverable: parse source into an AST and extract a flat,
- * human-inspectable summary — no execution, no instrumentation.
+ * human-inspectable summary: no execution, no instrumentation.
  */
 export function buildAstSummary(sourceCode: string): AstSummary {
   const ast = parse(sourceCode, {

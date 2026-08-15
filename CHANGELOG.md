@@ -28,7 +28,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **The panel now auto-refreshes when you save the file you're visualizing.** Editing code no
-  longer means closing and reopening the panel, or manually re-running the command — saving is
+  longer means closing and reopening the panel, or manually re-running the command; saving is
   enough. A save that fails to parse doesn't blank the panel: it keeps showing the last working
   trace and flags it with a small warning dot next to the filename, instead of wiping out
   whatever you were reviewing over an incidental typo.

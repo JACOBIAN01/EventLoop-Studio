@@ -141,7 +141,7 @@ Or, from within VS Code:
 
 <img width="1390" height="806" alt="Screenshot 2026-08-15 at 4 50 09 PM" src="https://github.com/user-attachments/assets/ccb8520c-154e-4434-8a1c-3a5166aea4dd" />
 
-Concrete example — open `samples/01-classic-ordering.js` and run **Visualize Event Loop**. You'll see `console.log` calls land on the Call Stack immediately, a `Promise.then()` callback queue into the Microtask Queue, and a `setTimeout` callback travel from Web APIs into the Macrotask Queue only after the microtask queue is empty.
+Concrete example: open `samples/01-classic-ordering.js` and run **Visualize Event Loop**. You'll see `console.log` calls land on the Call Stack immediately, a `Promise.then()` callback queue into the Microtask Queue, and a `setTimeout` callback travel from Web APIs into the Macrotask Queue only after the microtask queue is empty.
 
 <img width="1390" height="804" alt="Screenshot 2026-08-15 at 4 50 57 PM" src="https://github.com/user-attachments/assets/de7d88ed-69f1-4a9e-ae2c-87d799b51c08" />
 
@@ -201,7 +201,7 @@ No default keybindings are registered for either command.
 
 ## Configuration
 
-EventLoop Studio has no `contributes.configuration` entries in `package.json` — there are no user or workspace settings to configure. Two preferences exist but are stored as webview UI state (not VS Code settings), and persist automatically without any action needed:
+EventLoop Studio has no `contributes.configuration` entries in `package.json`: there are no user or workspace settings to configure. Two preferences exist but are stored as webview UI state (not VS Code settings), and persist automatically without any action needed:
 
 - EventLoop Guide narration on/off
 - Light/Dark theme selection
@@ -226,7 +226,7 @@ These are not exposed under `Settings` because they apply only within the visual
 ## Privacy & Security
 
 - **No telemetry.** No usage analytics, crash reporting, or metrics are collected or transmitted, verified by inspection of the extension's source (no telemetry/analytics libraries or calls are present).
-- **No network requests.** The extension does not call any external API or service. The one "genuinely real" operation (Node mode's Poll phase) is a local `fs.readFile` dispatched to Node's local libuv thread pool — it never leaves the machine.
+- **No network requests.** The extension does not call any external API or service. The one "genuinely real" operation (Node mode's Poll phase) is a local `fs.readFile` dispatched to Node's local libuv thread pool; it never leaves the machine.
 - **No authentication or credentials.** The extension requires no sign-in, API key, or token.
 - **Local-only processing.** Your source file is read from disk, executed inside a local Node `vm` sandbox in the extension host process, and never leaves your machine.
 
@@ -237,9 +237,9 @@ These are not exposed under `Settings` because they apply only within the visual
 | Item | Value |
 |---|---|
 | VS Code | `^1.85.0` |
-| Operating systems | Windows, macOS, Linux — no platform-specific code or native modules |
+| Operating systems | Windows, macOS, Linux (no platform-specific code or native modules) |
 | Target language | JavaScript (`.js`) files. The editor-title toolbar icon only appears when `resourceLangId == javascript` |
-| Node/runtime dependencies for the packaged extension | None beyond what VS Code itself provides — all dependencies are bundled into `out/` |
+| Node/runtime dependencies for the packaged extension | None beyond what VS Code itself provides (all dependencies are bundled into `out/`) |
 | TypeScript / JSX / other languages | Not supported by the parser/instrumenter; a `.ts` or `.jsx` file will fail to parse |
 
 ---
@@ -285,7 +285,7 @@ Check for an unconditional timer/interval loop in the script and add a stopping 
 
 ### Problem: The panel doesn't update after editing the file
 
-**Cause:** the panel auto-refreshes on save, so unsaved edits (or an editor with autosave off) won't show up until you save. If a small red warning dot appears next to the filename, your last save didn't parse — the panel is intentionally still showing the previous working version, not that save.
+**Cause:** the panel auto-refreshes on save, so unsaved edits (or an editor with autosave off) won't show up until you save. If a small red warning dot appears next to the filename, your last save didn't parse: the panel is intentionally still showing the previous working version, not that save.
 
 **Solution:**
 ```text
@@ -325,7 +325,7 @@ Node vm sandbox (real Promise/async, faked timers)
 Ordered ExecutionStep[] trace
    |
    v
-Webview (React) — pure fold over steps[0..index] per rendered step
+Webview (React): pure fold over steps[0..index] per rendered step
 ```
 
 ### The recording pipeline
@@ -346,7 +346,7 @@ Webview (React) — pure fold over steps[0..index] per rendered step
 
 ![Event loop decision flowchart: call stack, then microtasks, then macrotasks, then wait](media/diagrams/event-loop-decision.png)
 
-After a microtask runs, the loop re-checks the Call Stack and Microtask Queue before ever moving to the next macrotask — a microtask that schedules another microtask keeps winning ahead of any pending timer.
+After a microtask runs, the loop re-checks the Call Stack and Microtask Queue before ever moving to the next macrotask: a microtask that schedules another microtask keeps winning ahead of any pending timer.
 
 ### Project structure
 
@@ -425,7 +425,7 @@ This project's [LICENSE](#license) does not grant permission to modify, merge, o
 Full history in [CHANGELOG.md](CHANGELOG.md). Recent highlights:
 
 **0.3.3**
-- Changed: replaced the extension icon with a sharper 256x256 version — the old 128x128 met VS Code's documented minimum but rendered blurry on the Marketplace on high-DPI displays.
+- Changed: replaced the extension icon with a sharper 256x256 version; the old 128x128 met VS Code's documented minimum but rendered blurry on the Marketplace on high-DPI displays.
 - Documentation: added Browser/Node.js mode demo GIFs and in-context screenshots, switched to a live Marketplace version/install-count badge, and corrected the Installation section now that the extension is actually published.
 
 **0.3.2**
@@ -450,4 +450,4 @@ Full history in [CHANGELOG.md](CHANGELOG.md). Recent highlights:
 
 ## License
 
-Proprietary — all rights reserved. See [LICENSE](LICENSE). The source is publicly viewable for portfolio and evaluation purposes only; copying, modifying, or redistributing it requires prior written permission from the copyright holder.
+Proprietary. All rights reserved. See [LICENSE](LICENSE). The source is publicly viewable for portfolio and evaluation purposes only; copying, modifying, or redistributing it requires prior written permission from the copyright holder.

@@ -1,17 +1,17 @@
 import type { ExecutionStep } from '../../../src/shared/types';
 
 /**
- * Deterministic, hand-written step explanations — not LLM-generated. This is a
+ * Deterministic, hand-written step explanations, not LLM-generated. This is a
  * correctness-sensitive teaching tool: a wrong or slightly-off explanation is worse
  * than none for someone learning the concept for the first time, and with only a
  * handful of step kinds a fixed template set can cover all of them reliably, instantly,
  * and fully offline.
  *
  * Two tiers:
- *  - 'rule'       — explains one of the actual event-loop rules (timer/microtask/macrotask
+ *  - 'rule':       explains one of the actual event-loop rules (timer/microtask/macrotask
  *                   transitions). Worth seeing even on the 50th replay of the same code.
- *  - 'mechanical' — narrates an ordinary call/return/print/store. Useful the first time,
- *                   repetitive after that — this is the tier the Captions toggle hides.
+ *  - 'mechanical': narrates an ordinary call/return/print/store. Useful the first time,
+ *                   repetitive after that; this is the tier the Captions toggle hides.
  */
 export interface Caption {
   text: string;

@@ -6,7 +6,7 @@ export interface SourceCodeProps {
   currentLine: number | null;
 }
 
-/** Row height in px — kept in sync with the `h-5.5`/`leading-5.5` classes below so the
+/** Row height in px, kept in sync with the `h-5.5`/`leading-5.5` classes below so the
  *  animated highlight bar's computed `y` offset lines up pixel-for-pixel with each row. */
 const LINE_HEIGHT = 22;
 
@@ -21,7 +21,7 @@ export function SourceCode({ sourceCode, currentLine }: SourceCodeProps) {
   return (
     <div className="h-full overflow-x-auto overflow-y-auto rounded-lg bg-surface">
       {/* w-max + min-w-full: without an explicit width, <pre> stays pinned to the visible
-          viewport width even when a line is long enough to need horizontal scroll — so the
+          viewport width even when a line is long enough to need horizontal scroll, so the
           active-line highlight bar below (sized via inset-x-0, relative to this element) would
           stop partway across a scrolled long line instead of covering its full width. Growing
           <pre> to match its widest line (while never shrinking below the full container width)

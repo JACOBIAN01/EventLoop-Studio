@@ -21,7 +21,7 @@ import { usePanelSizes } from './state/usePanelSizes';
 export type EventLoopMode = 'browser' | 'node';
 export type Theme = 'light' | 'dark';
 
-/** The subset of the VS Code webview API we need — persisting a preference and messaging the host. */
+/** The subset of the VS Code webview API we need: persisting a preference and messaging the host. */
 export interface WebviewStateApi {
   getState: () => any;
   setState: (state: any) => void;
@@ -35,12 +35,12 @@ export interface PendingItem {
 }
 
 export interface StackFrame {
-  /** Stable across renders — the id of the 'push-stack' step that created this frame. */
+  /** Stable across renders: the id of the 'push-stack' step that created this frame. */
   id: number;
   label: string;
   /**
    * The untruncated version of `label`, when the two differ (an inline callback whose own code
-   * got capped for display — see instrument.ts's getFunctionLabel) — shown in a hover tooltip so
+   * got capped for display, see instrument.ts's getFunctionLabel), shown in a hover tooltip so
    * the full code is never actually lost, just visually capped.
    */
   detail?: string;
@@ -61,7 +61,7 @@ export interface DerivedState {
   /** Same underlying pending timers, once ready: browser mode's Macrotask Queue, node mode's Timers phase. */
   macrotaskQueueTimers: PendingItem[];
   pendingMicrotasks: PendingItem[];
-  /** Node mode only — always empty in a browser-mode trace, since nothing can schedule into it. */
+  /** Node mode only: always empty in a browser-mode trace, since nothing can schedule into it. */
   pendingNextTicks: PendingItem[];
   pendingImmediates: PendingItem[];
   pendingIO: PendingItem[];
@@ -70,11 +70,11 @@ export interface DerivedState {
   consoleOutput: string[];
   currentLine: number | null;
   loopStatus: LoopStatus;
-  /** Node mode only — which of the six libuv phases the loop is currently in, driven directly by 'enter-phase' steps. */
+  /** Node mode only: which of the six libuv phases the loop is currently in, driven directly by 'enter-phase' steps. */
   currentPhase: NodePhase | null;
   /**
    * The id of the most recent 'run-nexttick'/'run-microtask' step at or before the current index,
-   * or null if neither has run yet. Changes every single drain, not once per phase — used as a
+   * or null if neither has run yet. Changes every single drain, not once per phase, used as a
    * re-triggering key so the Microtask Hub can flash once per real callback, matching how often
    * nextTick/microtasks actually drain, not once per phase transition.
    */
@@ -101,7 +101,7 @@ const EMPTY_STATE: DerivedState = {
 
 /**
  * Removes the pending item this 'run-*' step corresponds to. `refId` (when present) points at
- * the exact 'schedule-*' step's id — two pending timers/microtasks can share an identical label
+ * the exact 'schedule-*' step's id: two pending timers/microtasks can share an identical label
  * (e.g. two `setTimeout(fn, 0)` calls), so refId is the only reliable way to pair them; label
  * matching is a fallback only for traces that predate this field.
  */
@@ -138,7 +138,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
   const callStack: StackFrame[] = [];
   const heap: Record<string, string> = {};
   // Each timer's queue membership (Web APIs vs Macrotask Queue) is tracked explicitly per item,
-  // driven only by its own 'schedule-timer'/'timer-ready' steps — never inferred from whatever
+  // driven only by its own 'schedule-timer'/'timer-ready' steps, never inferred from whatever
   // else happens to be on the call stack at a given instant. That's what previously caused a
   // timer to flicker back to Web APIs whenever an unrelated callback was executing: membership
   // was a single global flag recomputed from transient call-stack emptiness, not a per-timer fact.
@@ -164,7 +164,7 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
   // Once the first run-microtask/run-timer fires, the top-level synchronous
   // script is guaranteed (by JS run-to-completion semantics) to have finished.
   // Before that point, an empty call stack just means "between statements",
-  // not "ready for the event loop" — so timers stay in Web APIs until then.
+  // not "ready for the event loop", so timers stay in Web APIs until then.
   let eventLoopPhase = false;
 
   for (let i = 0; i <= index; i++) {
@@ -351,7 +351,7 @@ export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
 
   const { getLayout, registerGroupRef, onLayoutChanged, reset: resetLayout } = usePanelSizes(vscodeApi);
 
-  // Derived from the trace itself, not tracked separately — the currently-displayed mode is
+  // Derived from the trace itself, not tracked separately: the currently-displayed mode is
   // exactly whatever mode the current trace was actually recorded under, never a locally-guessed
   // value that could drift out of sync while a re-record is in flight.
   const activeMode: EventLoopMode = trace?.mode ?? 'browser';
@@ -486,7 +486,7 @@ export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
                   bodyClassName="overflow-hidden"
                   className="h-full"
                   badge={
-                    // Auto-refresh only fires on save (see reRecordOnSave in extension.ts) — this
+                    // Auto-refresh only fires on save (see reRecordOnSave in extension.ts). This
                     // is the on-demand escape hatch for "I haven't saved yet, show me anyway."
                     // Reuses the exact same requestTrace message the mode toggle already sends,
                     // just with the mode unchanged, so it needs no new host-side plumbing.
@@ -705,7 +705,7 @@ export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
                 <ResizablePanel id="phaseTrack" minSize={20}>
                   <NodePhaseTrack
                     currentPhase={derived.currentPhase}
-                    // Pending Timers isn't a separate panel anymore — it IS the ring's first
+                    // Pending Timers isn't a separate panel anymore: it IS the ring's first
                     // phase position. Both "still waiting" and "ready to run" are the same
                     // underlying queue at different moments, so the chip shows the union of both
                     // instead of picking one.

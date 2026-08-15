@@ -1,5 +1,5 @@
 /**
- * Standalone preview entry point — NOT part of the production webview bundle.
+ * Standalone preview entry point: NOT part of the production webview bundle.
  * Lets us self-verify layout + playback logic in a plain browser, without a
  * running VS Code Extension Host. When `acquireVsCodeApi` isn't present (i.e.
  * we're not inside a real webview), falls back to fetching mock-trace.json.
@@ -9,7 +9,7 @@ import ReactDOM from 'react-dom/client';
 import type { Trace } from '../src/shared/types';
 import { App } from './src/App';
 // Styling is Tailwind CSS, compiled by the Tailwind CLI straight to preview-bundle.css
-// and linked directly in preview.html — not bundled here (same setup as main.tsx/webview.css).
+// and linked directly in preview.html, not bundled here (same setup as main.tsx/webview.css).
 
 declare global {
   interface Window {
@@ -34,7 +34,7 @@ function PreviewRoot() {
 
   useEffect(() => {
     if (typeof window.acquireVsCodeApi === 'function') {
-      // We're somehow inside a real webview — behave like the production entry.
+      // We're somehow inside a real webview: behave like the production entry.
       const vscode = window.acquireVsCodeApi();
       const handleMessage = (event: MessageEvent) => {
         if (event.data?.type === 'trace') setTrace(event.data.payload);

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ---------------------------------------------------------------------- */
-/* EventLoop Studio — Light/Dark theme.                                   */
+/* EventLoop Studio: Light/Dark theme.                                    */
 /*                                                                        */
 /* Tailwind v4 compiles every palette utility (bg-slate-50, text-indigo-  */
 /* 700, ...) to `var(--color-slate-50)` etc, so redefining those same     */
@@ -25,7 +25,7 @@
 /* Shades that are only ever a small fixed accent dot/badge/spinner       */
 /* (indigo/violet-500, indigo/violet/emerald/teal/amber/sky-600 CTAs,     */
 /* every hue's -500 Panel dot) are intentionally left out of the override */
-/* table below — they stay the same vivid color in both themes, the way  */
+/* table below; they stay the same vivid color in both themes, the way   */
 /* a brand color usually does.                                           */
 /* ---------------------------------------------------------------------- */
 
@@ -44,10 +44,10 @@ body {
 /* @theme (not plain :root) is required for Tailwind v4 to actually generate the
    bg-surface/text-surface/bg-heading/text-heading utilities used below. */
 @theme {
-  /* Surface: bg-white's "panel/header/card background" role only — never
+  /* Surface: bg-white's "panel/header/card background" role only, never
      text-white (badges), which stays literally white in both themes. */
   --color-surface: #ffffff;
-  /* Heading: text-slate-900's "emphasized heading/active-line" role only —
+  /* Heading: text-slate-900's "emphasized heading/active-line" role only,
      never ConsolePanel's bg-slate-900 (always-dark terminal), which is
      untouched by this whole override system. */
   --color-heading: oklch(20.8% .042 265.755);
@@ -55,14 +55,14 @@ body {
 
 /* Not `:root[data-theme="dark"]`: :root only ever matches the document's actual
    root element (<html>). The toggle sets data-theme on App's own wrapper <div>,
-   so the selector needs to match that div directly for the override to apply —
+   so the selector needs to match that div directly for the override to apply;
    custom properties still cascade correctly to every descendant from there. */
 [data-theme="dark"] {
   --color-surface: oklch(27.9% .041 260.031);
   --color-heading: oklch(96.8% .007 247.896);
 
   /* slate: mirror 50<->700, 100<->600, 200<->500, 300<->400.
-     800/900 deliberately excluded — ConsolePanel's fixed dark terminal look. */
+     800/900 deliberately excluded: ConsolePanel's fixed dark terminal look. */
   --color-slate-50: oklch(37.2% .044 257.287);
   --color-slate-100: oklch(44.6% .043 257.281);
   --color-slate-200: oklch(55.4% .046 257.417);
@@ -104,7 +104,7 @@ body {
   --color-amber-700: oklch(92.4% .12 95.746);
   --color-amber-800: oklch(98.7% .022 95.277);
 
-  /* violet: 500 excluded (fixed Panel dot). 600 IS inverted here — its two
+  /* violet: 500 excluded (fixed Panel dot). 600 IS inverted here: its two
      solid-fill uses (NodePhaseTrack badge, CallStack gradient stop) were
      switched to a literal arbitrary color so this is safe. */
   --color-violet-50: oklch(43.2% .232 292.759);
@@ -124,7 +124,7 @@ body {
   --color-sky-800: oklch(97.7% .013 236.62);
 
   /* red: error banners only. Deliberately NOT a mirror-swap with red-700's original
-     (that's fully-saturated, chroma .213 — reads as a bold alert-red fill, not a
+     (that's fully-saturated, chroma .213, reads as a bold alert-red fill, not a
      soft tinted background). Hand-picked low-chroma values instead, so the banner
      stays a subdued dark wash. */
   --color-red-50: oklch(28% .045 25);

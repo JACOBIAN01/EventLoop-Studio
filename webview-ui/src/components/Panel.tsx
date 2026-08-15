@@ -30,7 +30,7 @@ const ACCENT: Record<PanelAccent, string> = {
 /**
  * Consistent panel chrome shared by every viz panel. Deliberately restrained: one neutral
  * border/background style everywhere, with a single small color dot carrying each panel's
- * identity — the color budget is spent on the data inside (frames, tokens), not on decorating
+ * identity: the color budget is spent on the data inside (frames, tokens), not on decorating
  * every container. Uniform chrome + purposeful data color reads as considered, not templated.
  */
 export function Panel({
@@ -60,7 +60,7 @@ export function Panel({
         {badge && <span className="ml-auto">{badge}</span>}
       </div>
       {/*
-        Overflow containment lives on the body, not the outer panel — that keeps content from
+        Overflow containment lives on the body, not the outer panel: that keeps content from
         spilling past the rounded border (the original bug) without also clipping the header's
         InfoDot tooltip, which needs to render outside the panel's box. Panels that don't pass
         their own bodyClassName (only Event Loop, currently) get a safe overflow-hidden default;

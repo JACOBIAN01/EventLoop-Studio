@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import type { HostToWebviewMessage, Trace } from '../../src/shared/types';
 import { App } from './App';
 // Styling is Tailwind CSS, compiled by the Tailwind CLI straight to out/webview.css
-// and linked directly in the webview HTML (see EventLoopPanel.ts) — not bundled here.
+// and linked directly in the webview HTML (see EventLoopPanel.ts), not bundled here.
 
 declare function acquireVsCodeApi(): {
   postMessage: (msg: any) => void;
@@ -11,7 +11,7 @@ declare function acquireVsCodeApi(): {
   setState: (s: any) => void;
 };
 
-// Must be called exactly once at module scope — VS Code throws if invoked twice.
+// Must be called exactly once at module scope; VS Code throws if invoked twice.
 const vscode = acquireVsCodeApi();
 
 function Root() {
@@ -30,7 +30,7 @@ function Root() {
       } else if (message.type === 'error') {
         setHostError(message.message);
       } else if (message.type === 'staleSource') {
-        // Deliberately doesn't touch `trace` — see the message type's own doc comment.
+        // Deliberately doesn't touch `trace`; see the message type's own doc comment.
         setStaleWarning(message.message);
       }
     }

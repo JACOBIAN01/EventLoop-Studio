@@ -17,7 +17,7 @@ const VIEWPORT_MARGIN = 8;
  * Small "i" icon that reveals a short explanation on hover or keyboard focus.
  *
  * The tooltip renders through a portal into `document.body`, positioned via a measured
- * `getBoundingClientRect()` rather than CSS `absolute`+`group-hover` — every panel this sits in
+ * `getBoundingClientRect()` rather than CSS `absolute`+`group-hover`: every panel this sits in
  * is wrapped by react-resizable-panels' `Panel`, which hard-codes `overflow: hidden` on itself
  * (not overridable, see its own type docs) and clips anything absolutely positioned that spills
  * past its box, which is exactly what happened once panels got narrow enough to resize. A

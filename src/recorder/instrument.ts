@@ -9,11 +9,11 @@ import { describeCallee } from '../parser/astSummary';
  *  - every top-level statement (Program-level and one level inside each function body)
  *    gets a `__trace.line(n)` marker so the Webview can highlight the currently executing line.
  *  - every `let`/`const`/`var` binding and simple function parameter gets re-snapshotted to the
- *    Heap at each statement boundary and at every function exit (see heapRefreshSnippet below) —
+ *    Heap at each statement boundary and at every function exit (see heapRefreshSnippet below),
  *    not just once at declaration time, so reassignments (`x++`, `x += ...`) actually show up.
  *
  * `setTimeout`, `Promise.prototype.then`, `queueMicrotask` and `console.log` are NOT touched
- * here — those are monkey-patched at the sandbox global level (see sandbox.ts) since they're a
+ * here: those are monkey-patched at the sandbox global level (see sandbox.ts) since they're a
  * small, fixed set of APIs and patching the real objects is simpler and more robust than trying
  * to rewrite every call site.
  */
@@ -35,7 +35,7 @@ export function instrument(sourceCode: string): string {
   const insertions: Insertion[] = [];
   const insert = (pos: number, text: string, order = 0) => insertions.push({ pos, text, order });
 
-  // Every `let`/`const`/`var` binding and simple function parameter, anywhere in the program —
+  // Every `let`/`const`/`var` binding and simple function parameter, anywhere in the program,
   // used to re-snapshot the Heap at statement/function-exit boundaries below. Names that aren't
   // actually reachable at a given insertion point are silently skipped at runtime (see
   // heapRefreshSnippet's try/catch), so over-collecting here is harmless.
@@ -46,12 +46,12 @@ export function instrument(sourceCode: string): string {
     const { label, full } = getFunctionLabel(node, ancestors, sourceCode);
     const line = node.loc.start.line;
     // `full` is only ever longer than `label` when the label itself had to be truncated (an
-    // inline callback's own code, capped so a Call Stack frame doesn't grow unbounded) — passed
+    // inline callback's own code, capped so a Call Stack frame doesn't grow unbounded), passed
     // through so the UI can still show the complete, untruncated code on hover.
     const enterCall = `__trace.enter(${JSON.stringify(label)}, ${line}, ${JSON.stringify(full)});`;
 
     // The heap refresh goes *inside* the finally block (after it, code would be dead following
-    // a `return`) — a finally block always runs, even after an early return, and JS guarantees
+    // a `return`): a finally block always runs, even after an early return, and JS guarantees
     // it runs after the try's return value has already been computed (so it sees any side
     // effects, like `x++`, from evaluating that return expression) but before the function
     // actually hands the value back to its caller. That gets us fresh values on every exit path
@@ -79,13 +79,13 @@ export function instrument(sourceCode: string): string {
 
   // Stamps an inline callback passed directly to a known scheduling API (process.nextTick,
   // setTimeout, setImmediate, queueMicrotask, .then/.catch/.finally) with its own original,
-  // pre-instrumentation source text, via __trace.tag(<fn>, "<src>") — a drop-in expression
+  // pre-instrumentation source text, via __trace.tag(<fn>, "<src>"), a drop-in expression
   // wrapper, safe here specifically because a call argument is always an expression position,
   // never a declaration. Must read the snippet from the untouched `sourceCode`, before
   // wrapFunctionBody's insertions turn it into a __trace.enter/try/finally-laden body; the
   // recorder needs this to show *what the user actually wrote* in the queue panels, not the
   // rewritten internals. A callback passed by reference (an Identifier, not a literal) is left
-  // alone — the recorder falls back to that function's own name instead (see sandbox.ts).
+  // alone; the recorder falls back to that function's own name instead (see sandbox.ts).
   function tagSchedulerCallbackArgs(node: any) {
     const callee = describeCallee(node.callee);
     const isSchedulerCall =
@@ -110,7 +110,7 @@ export function instrument(sourceCode: string): string {
   }
 
   // Line + Heap markers: Program-level statements, plus the direct statements of every
-  // block-bodied function (one level deep — not recursing into nested if/for/while blocks).
+  // block-bodied function (one level deep, not recursing into nested if/for/while blocks).
   for (const stmt of ast.body as any[]) {
     insert(stmt.start, `__trace.line(${stmt.loc.start.line});\n`, -1);
     insert(stmt.end, `\n${heapRefresh}`, 1);
@@ -158,7 +158,7 @@ function collectTrackedNames(ast: any): Set<string> {
 /**
  * Each candidate name is refreshed inside its own try/catch: a name that isn't actually in
  * scope at this exact point in the source (never declared here, or a `let`/`const` still in its
- * temporal dead zone) would throw a ReferenceError if referenced directly — the catch silently
+ * temporal dead zone) would throw a ReferenceError if referenced directly; the catch silently
  * skips it instead of crashing the user's program. Whichever names *are* reachable get a fresh
  * `heapSet`, which is exactly what lets the Heap panel reflect reassignments, not just the
  * value at the moment of declaration.
@@ -174,7 +174,7 @@ function heapRefreshSnippet(names: Set<string>): string {
 }
 
 /** Collapses a source snippet to one line and caps its length, for display as a Call Stack
- *  frame label — unlike the queue panels (which keep the full snippet and truncate visually via
+ *  frame label: unlike the queue panels (which keep the full snippet and truncate visually via
  *  CSS), a frame label is plain text with no truncation of its own, so the cap has to happen here. */
 function truncateSnippet(text: string, max = 60): string {
   const collapsed = text.replace(/\s+/g, ' ').trim();
@@ -202,7 +202,7 @@ function applyInsertions(sourceCode: string, insertions: Insertion[]): string {
 
 /**
  * `label` is what identifies the frame (rendered directly, and matched against on exit); `full`
- * is the same text UNTRUNCATED — identical to `label` for every named-binding case below, and
+ * is the same text UNTRUNCATED, identical to `label` for every named-binding case below, and
  * only actually longer than it for an inline callback's own source (see the CallExpression
  * branch), where `label` gets capped so a Call Stack frame doesn't grow unbounded. Callers pass
  * `full` through to the UI so the complete code is still available on hover.
@@ -229,7 +229,7 @@ function getFunctionLabel(node: any, ancestors: any[], sourceCode: string): { la
     }
     if (parent.type === 'CallExpression') {
       // An inline callback passed straight to a call (setTimeout(() => ..., 0),
-      // somePromise.then(() => ...), arr.forEach(() => ...), etc.) — showing the callback's own
+      // somePromise.then(() => ...), arr.forEach(() => ...), etc.), showing the callback's own
       // code on its Call Stack frame is far more useful than a generic "<callee> callback"
       // label, especially for chains like `Promise.resolve().then(...)` where the callee itself
       // can't be described any more specifically than "<expression>.then".

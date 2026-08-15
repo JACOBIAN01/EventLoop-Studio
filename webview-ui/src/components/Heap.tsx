@@ -15,7 +15,7 @@ export function Heap({ entries }: HeapProps) {
           <span className="text-xs italic text-slate-400">no heap allocations yet</span>
         </div>
       )}
-      {/* AnimatePresence stays mounted permanently — see CallStack.tsx for why. */}
+      {/* AnimatePresence stays mounted permanently; see CallStack.tsx for why. */}
       <AnimatePresence initial={false}>
         {names.map((name) => (
           <motion.div

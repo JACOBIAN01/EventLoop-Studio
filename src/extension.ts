@@ -27,7 +27,7 @@ async function visualizeEventLoop(context: vscode.ExtensionContext, modeOverride
   if (editor && editor.document.languageId === 'javascript') {
     document = editor.document;
   } else if (modeOverride && lastVisualizedDocument) {
-    // The toggle lives inside the webview panel, so clicking it moves focus there — by the
+    // The toggle lives inside the webview panel, so clicking it moves focus there; by the
     // time this runs, activeTextEditor is undefined (no text editor has focus), not the file
     // being visualized. Fall back to whichever file this panel is already showing.
     document = lastVisualizedDocument;
@@ -51,7 +51,7 @@ async function visualizeEventLoop(context: vscode.ExtensionContext, modeOverride
  * Auto-refreshes the open panel when its visualized file is saved, so the user doesn't have to
  * close/reopen or manually re-run the command after every edit. Deliberately narrower than
  * visualizeEventLoop: it never creates or reveals a panel (a background save shouldn't pop one
- * open or steal focus), and a save that fails to parse doesn't blank the panel via postTrace —
+ * open or steal focus), and a save that fails to parse doesn't blank the panel via postTrace:
  * it's flagged via notifyStaleSource instead, leaving whatever last worked on screen.
  */
 async function reRecordOnSave(document: vscode.TextDocument) {

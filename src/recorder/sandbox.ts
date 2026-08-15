@@ -26,7 +26,7 @@ interface PendingCallback {
  * Runs `sourceCode` in an isolated vm context and records every call-stack push/pop,
  * console output, and micro/macrotask scheduling event as an ordered ExecutionStep[].
  *
- * Design note: we let the vm context's OWN native Promise implementation do the real work —
+ * Design note: we let the vm context's OWN native Promise implementation do the real work:
  * it shares the process's real microtask queue, so ordering between chained/nested promises
  * is spec-correct "for free". We fake `setTimeout`/`process.nextTick`/`setImmediate`/
  * `simulateSystemCallback`/`createHandle` as in-memory queues this recorder fully controls,
@@ -86,7 +86,7 @@ export async function recordTrace(
 
   // Set immediately before dispatching a queued callback (see runPhaseCallback / the browser
   // timer loop / wrapMicrotaskCallback below), and consumed by whichever push-stack happens to
-  // fire first once that callback actually starts running — which is always that callback's own
+  // fire first once that callback actually starts running, which is always that callback's own
   // frame, since dispatch calls it directly. This is what lets the queue token's layoutId morph
   // straight into the real callback's Call Stack frame, without a separate synthetic "... handler"
   // frame in between (the previous design used a dedicated wrapper frame for this instead).
@@ -99,7 +99,7 @@ export async function recordTrace(
 
   const traceApi = {
     // `full` is the untruncated version of `label` (only ever different for an inline callback
-    // whose own code got capped for display, see instrument.ts's getFunctionLabel) — carried as
+    // whose own code got capped for display, see instrument.ts's getFunctionLabel), carried as
     // `detail` so the Call Stack can show it in a hover tooltip without losing it entirely.
     enter(label: string, line: number, full?: string) {
       push('push-stack', { label, line, detail: full !== label ? full : undefined, refId: consumePendingRefId() });
@@ -116,7 +116,7 @@ export async function recordTrace(
     // Stamps a callback with the ORIGINAL (pre-instrumentation) source text of the function
     // literal `instrument.ts` found it wrapping, since by the time a scheduling function like
     // process.nextTick actually receives this callback, `fn.toString()` would otherwise return
-    // the rewritten body full of __trace.enter/try/finally scaffolding — exactly the kind of
+    // the rewritten body full of __trace.enter/try/finally scaffolding, exactly the kind of
     // internal noise this tool shouldn't surface. Only inline function-literal arguments to a
     // known scheduling call get tagged (see instrument.ts); a callback passed by reference falls
     // back to its name in describeCallback below.
@@ -130,7 +130,7 @@ export async function recordTrace(
 
   function consoleMethod(methodLabel: string) {
     return (...args: unknown[]) => {
-      // console.log is a real function call — it belongs on the Call Stack too, even
+      // console.log is a real function call; it belongs on the Call Stack too, even
       // though it's native rather than user-defined code our instrumentation can wrap.
       // consumePendingRefId() is a no-op (undefined) unless this console.log call IS the
       // callback a scheduled item just dispatched (e.g. `setTimeout(console.log, 0)`), in
@@ -145,7 +145,7 @@ export async function recordTrace(
     const id = timerIdCounter++;
     const seq = timerSeq++;
     const label = `setTimeout (${delay}ms)`;
-    // setTimeout(...) itself is a real, synchronous call — it belongs on the Call Stack too,
+    // setTimeout(...) itself is a real, synchronous call; it belongs on the Call Stack too,
     // just like console.log. Only the *callback* it registers goes into the timer queue; it
     // doesn't run until its own turn.
     push('push-stack', { label });
@@ -190,7 +190,7 @@ export async function recordTrace(
 
   // Genuinely real, not simulated: dispatches an actual fs.readFile of the file being
   // visualized to Node's real libuv thread pool. Its callback fires in the Poll phase only once
-  // the real op actually completes — see the Promise.race in the Poll phase loop below, which
+  // the real op actually completes; see the Promise.race in the Poll phase loop below, which
   // is what lets multiple real ops complete in whatever order they genuinely finish in, rather
   // than an order this recorder imposes.
   function fakeReadFileReal(label: string, callback?: (...a: unknown[]) => void) {
@@ -240,7 +240,7 @@ export async function recordTrace(
     const scheduleStepId = push('schedule-microtask', { label, detail: describeCallback(callback) });
     return (...args: unknown[]) => {
       push('run-microtask', { label, refId: scheduleStepId });
-      // No synthetic wrapper frame here — the callback's own instrumented push-stack (fired the
+      // No synthetic wrapper frame here: the callback's own instrumented push-stack (fired the
       // moment `callback(...)` below actually starts running) picks up scheduleStepId via
       // pendingHandlerRefId/consumePendingRefId, so the Call Stack shows only the real callback,
       // not an extra "... handler" frame around it.
@@ -276,7 +276,7 @@ export async function recordTrace(
 
   const context = vm.createContext(sandbox);
 
-  // Patch this CONTEXT's own Promise.prototype.then (a separate realm's Promise class —
+  // Patch this CONTEXT's own Promise.prototype.then (a separate realm's Promise class;
   // this never touches the extension host's real global Promise) and define queueMicrotask
   // in terms of it, so ordering between .then() chains and queueMicrotask stays spec-correct.
   vm.runInContext(
@@ -338,7 +338,7 @@ export async function recordTrace(
       // whatever else happens to be on the stack at any given instant.
       push('timer-ready', { label: timer.label, refId: timer.scheduleStepId });
       push('run-timer', { label: timer.label, refId: timer.scheduleStepId });
-      // No synthetic "... handler" frame — see wrapMicrotaskCallback's comment above.
+      // No synthetic "... handler" frame; see wrapMicrotaskCallback's comment above.
       pendingHandlerRefId = timer.scheduleStepId;
       try {
         timer.callback();
@@ -469,7 +469,7 @@ export async function recordTrace(
       push(readyKind, { label: item.label, refId: item.scheduleStepId });
     }
     push(runKind, { label: item.label, refId: item.scheduleStepId, ambiguous: opts.ambiguous || undefined });
-    // No synthetic "... handler" frame — see wrapMicrotaskCallback's comment above.
+    // No synthetic "... handler" frame; see wrapMicrotaskCallback's comment above.
     pendingHandlerRefId = item.scheduleStepId;
     try {
       item.callback();
@@ -501,7 +501,7 @@ const NODE_ONLY_GLOBALS = ['process', 'setImmediate'];
  * of a generic runtime error. Two specific, common cases:
  *  - A Node-only global used while in 'browser' mode: real browsers don't have it either, so
  *    the fix is switching modes, not a bug in the sandbox.
- *  - `require`: never exposed in either mode, on purpose — real module loading would hand a
+ *  - `require`: never exposed in either mode, on purpose: real module loading would hand a
  *    script full filesystem/network access, well beyond what a visualization tool should grant
  *    by default. Points at the safe, curated equivalents this tool already provides instead.
  */
@@ -512,14 +512,14 @@ function explainRuntimeError(err: any, mode: 'browser' | 'node'): string {
     const name = match[1];
     if (name === 'require') {
       return (
-        `Runtime error: ${message} — this sandbox never exposes require or Node's module system, ` +
+        `Runtime error: ${message}. This sandbox never exposes require or Node's module system, ` +
         `in either mode, real module loading would give a script full filesystem/network access. ` +
         `Use the built-in readFileReal(), simulateSystemCallback(), or createHandle() instead, ` +
         `they cover the same real phases safely.`
       );
     }
     if (mode === 'browser' && NODE_ONLY_GLOBALS.includes(name)) {
-      return `Runtime error: ${message} — this script uses a Node.js-specific API. Switch to Node.js mode (top-right toggle) and try again.`;
+      return `Runtime error: ${message}. This script uses a Node.js-specific API. Switch to Node.js mode (top-right toggle) and try again.`;
     }
   }
   return `Runtime error: ${message}`;
@@ -543,7 +543,7 @@ function formatValue(value: unknown): string {
 }
 
 /**
- * Identifies which callback a schedule-* step is queuing, for display in the queue panels —
+ * Identifies which callback a schedule-* step is queuing, for display in the queue panels:
  * without this, every pending `process.nextTick`/`setTimeout`/etc. entry shows the same generic
  * API name and is indistinguishable from any other pending call to the same API. Whitespace is
  * collapsed so a multi-line callback body still reads as one line; the full (untruncated) string

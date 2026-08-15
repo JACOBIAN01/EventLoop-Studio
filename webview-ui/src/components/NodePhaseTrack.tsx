@@ -15,10 +15,10 @@ export interface NodePhaseTrackProps {
   poll: PendingItem[];
   check: PendingItem[];
   closeCallbacks: PendingItem[];
-  /** Cross-cutting, not phases — rendered inside the Microtask Hub, not as their own chips. */
+  /** Cross-cutting, not phases: rendered inside the Microtask Hub, not as their own chips. */
   pendingNextTicks: PendingItem[];
   pendingMicrotasks: PendingItem[];
-  /** Changes on every real 'run-nexttick'/'run-microtask' step — drives the hub's per-callback flash. */
+  /** Changes on every real 'run-nexttick'/'run-microtask' step: drives the hub's per-callback flash. */
   lastDrainStepId: number | null;
   /** Threaded down from usePanelSizes, so the Microtask Hub's nextTick/Promise split can join
    *  the same resizable-layout system every other panel split already uses. */
@@ -36,7 +36,7 @@ interface PhaseDef {
   real?: boolean;
 }
 
-/** Real libuv order, fixed, every iteration — this is the whole point of the track. */
+/** Real libuv order, fixed, every iteration: this is the whole point of the track. */
 const PHASES: PhaseDef[] = [
   {
     phase: 'timers',
@@ -94,7 +94,7 @@ const GRID_POS: Record<NodePhase, { col: number; row: number }> = {
 };
 
 /**
- * Just the arrowhead — no tail line — rotated per direction. A real SVG triangle instead of a
+ * Just the arrowhead, no tail line, rotated per direction. A real SVG triangle instead of a
  * unicode glyph so the diagonal spokes still point exactly along their true angle.
  */
 function ArrowIcon({ rotation, className = '' }: { rotation: number; className?: string }) {
@@ -199,7 +199,7 @@ function MicrotaskHub({
         <span className="text-[11.5px] font-bold text-sky-700">Microtask Hub</span>
         <InfoDot
           label="About the Microtask Hub"
-          text="Drains after every callback, not once per phase — process.nextTick and the Promise/microtask queue are cross-cutting, not phases of their own, so they sit inside the loop they drain between."
+          text="Drains after every callback, not once per phase. process.nextTick and the Promise/microtask queue are cross-cutting, not phases of their own, so they sit inside the loop they drain between."
         />
       </div>
       <Group
@@ -271,11 +271,11 @@ export function NodePhaseTrack({
       <div
         // pt-2: without it, row 1's chips sit flush against this panel's own top edge (itself
         // wrapped by react-resizable-panels' overflow:auto container), leaving no room for the
-        // count badge's -top-1.5 offset to render — it was getting clipped clean in half.
+        // count badge's -top-1.5 offset to render; it was getting clipped clean in half.
         className="grid min-h-0 flex-1 items-stretch justify-items-stretch gap-x-3 gap-y-1.5 pt-2"
         style={{
           gridTemplateColumns: 'repeat(9, auto)',
-          // Chip rows (1.3fr each) unchanged from before — the 6 phases keep both their grid
+          // Chip rows (1.3fr each) unchanged from before: the 6 phases keep both their grid
           // position AND their size. The hub's row grew from 1.4fr to 2.6fr entirely by
           // shrinking the two spoke-arrow rows (0.25fr -> 0.15fr, they're just 8px icons).
           gridTemplateRows: 'minmax(0,1.3fr) minmax(0,0.15fr) minmax(0,2.6fr) minmax(0,0.15fr) minmax(0,1.3fr)',
@@ -294,7 +294,7 @@ export function NodePhaseTrack({
           const isIdlePrepareChip = def.phase === 'idle-prepare';
           const isActive = currentPhase === def.phase && !isIdlePrepareChip;
           const items = itemsFor[def.phase];
-          // Same as QueueList: show the callback itself, not just the scheduling API's name —
+          // Same as QueueList: show the callback itself, not just the scheduling API's name;
           // process.nextTick/setTimeout/etc. all look identical otherwise.
           const previewText = items.length > 0 ? items[0].detail ?? items[0].label : null;
           const preview = items.length === 0 ? null : items.length === 1 ? previewText : `${previewText} +${items.length - 1} more`;
@@ -354,7 +354,7 @@ export function NodePhaseTrack({
                 )}
               </div>
               {preview && (
-                // A bordered box, not just plain text — visually sets apart "what's actually
+                // A bordered box, not just plain text: visually sets apart "what's actually
                 // stored here" from the phase's own number/label header above it.
                 <div className="flex min-w-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-1">
                   {items[0]?.detail && (

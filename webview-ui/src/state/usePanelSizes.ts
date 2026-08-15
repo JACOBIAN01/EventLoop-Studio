@@ -11,7 +11,7 @@ export type LayoutMap = Record<string, Layout>;
  * Layout" restores everything back to.
  *
  * Node mode's `nodeRight` percentages approximate today's fixed pixel heights (h-32/h-24/
- * remainder) as proportions of a typical panel height — inherently approximate, since converting
+ * remainder) as proportions of a typical panel height, inherently approximate, since converting
  * a fixed-px layout to percentage-of-container has no single "correct" answer.
  */
 export const DEFAULT_LAYOUTS: LayoutMap = {
@@ -32,7 +32,7 @@ export const DEFAULT_LAYOUTS: LayoutMap = {
 /**
  * Persists every resizable Group's layout via the same vscodeApi.getState()/setState() pattern
  * already used for captionsEnabled and theme, rather than the library's own useDefaultLayout +
- * localStorage mechanism — keeps this app's state in one place, the extension's own webview
+ * localStorage mechanism: keeps this app's state in one place, the extension's own webview
  * state, which is the more reliable persistence layer here than webview localStorage.
  */
 export function usePanelSizes(vscodeApi: WebviewStateApi | undefined) {

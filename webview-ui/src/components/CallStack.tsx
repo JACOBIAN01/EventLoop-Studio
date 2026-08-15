@@ -19,7 +19,7 @@ export function CallStack({ frames }: CallStackProps) {
       )}
       {/*
         AnimatePresence must stay mounted permanently (never conditionally unmounted based on
-        list emptiness) — otherwise remounting it later is treated as its own "first render",
+        list emptiness); otherwise remounting it later is treated as its own "first render",
         which suppresses entrance/shared-layout transitions for whatever appears right after an
         empty stack (a very common case here, since the stack drains to empty constantly).
       */}
@@ -27,7 +27,7 @@ export function CallStack({ frames }: CallStackProps) {
         {topToBottom.map((frame, i) => {
           const isTop = i === 0;
           // A dispatched callback's frame (tokenRefId set) shares a layoutId with the queue
-          // token that spawned it — Framer Motion morphs the token across panels into this frame.
+          // token that spawned it; Framer Motion morphs the token across panels into this frame.
           const layoutId = frame.tokenRefId !== undefined ? `token-${frame.tokenRefId}` : undefined;
           return (
             <motion.div
@@ -41,7 +41,7 @@ export function CallStack({ frames }: CallStackProps) {
               exit={{ opacity: 0, scale: 0.85, transition: { duration: 0.15 } }}
               transition={{ type: 'spring', stiffness: 480, damping: 34, mass: 0.7 }}
               // detail is only ever set when label had to be truncated (an inline callback's own
-              // code, capped so the frame doesn't grow unbounded) — the tooltip is where the
+              // code, capped so the frame doesn't grow unbounded), the tooltip is where the
               // complete code is still available.
               title={frame.detail ?? undefined}
               className={

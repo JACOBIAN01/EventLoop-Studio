@@ -34,7 +34,7 @@ interface PriorityRowProps {
 /**
  * Shows the real decision the event loop makes, not a generic "it's busy" spinner:
  * is the stack empty, and if so, which queue wins (microtasks always checked first).
- * The only motion is a brief pulse on whichever row is actually active right now —
+ * The only motion is a brief pulse on whichever row is actually active right now:
  * meaningful motion tied to a real state transition, not perpetual animation.
  */
 function PriorityRow({ index, label, active, activeClass }: PriorityRowProps) {

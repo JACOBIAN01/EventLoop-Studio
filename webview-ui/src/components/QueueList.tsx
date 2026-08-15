@@ -7,7 +7,7 @@ export type QueueColor = 'teal' | 'amber' | 'violet' | 'sky';
 
 /**
  * Full literal class strings per color, looked up by key rather than built with template
- * interpolation — Tailwind's build-time scanner only picks up class names that appear as
+ * interpolation: Tailwind's build-time scanner only picks up class names that appear as
  * complete, unbroken strings somewhere in the source, so `border-${color}-200` would silently
  * produce no CSS at all.
  */
@@ -27,7 +27,7 @@ export interface QueueListProps {
   color: QueueColor;
   /** A holding pool (Web APIs / Pending Timers) isn't FIFO-ordered, so it wraps in a column; everything else is a row. */
   direction?: 'row' | 'col';
-  /** Tags the first item "next" — meaningful for an actual priority queue, not a holding pool. */
+  /** Tags the first item "next": meaningful for an actual priority queue, not a holding pool. */
   showNextBadge?: boolean;
   /** Which direction this token is "thrown in" from, based on this panel's position relative to the Call Stack. */
   initialOffset: { x?: number; y?: number; rotate?: number };
@@ -39,7 +39,7 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
   return (
     <div
       // A FIFO queue (direction="row", the default) always lays its items out in one horizontal
-      // line, oldest-to-newest left-to-right, scrolling on the x-axis instead of wrapping —
+      // line, oldest-to-newest left-to-right, scrolling on the x-axis instead of wrapping,
       // wrapping to a second row breaks that left-to-right ordering as a visual read of "what
       // comes next". A holding pool (direction="col", Web APIs / Pending Timers) isn't FIFO-
       // ordered, so it keeps wrapping in a column instead.
@@ -54,7 +54,7 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
           <span className="text-xs italic text-slate-400">{emptyText}</span>
         </div>
       )}
-      {/* AnimatePresence stays mounted permanently — see CallStack.tsx for why. */}
+      {/* AnimatePresence stays mounted permanently; see CallStack.tsx for why. */}
       <AnimatePresence initial={false} mode="popLayout">
         {items.map((item, i) => (
           <motion.div
@@ -77,7 +77,7 @@ export function QueueList({ items, emptyText, color, direction = 'row', showNext
             )}
             <div className="flex min-w-0 items-center gap-1">
               {item.detail && (
-                // Inline, leading the code it belongs to — not a badge straddling the border;
+                // Inline, leading the code it belongs to, not a badge straddling the border;
                 // this is an explicit, discoverable affordance in place of an invisible
                 // whole-box hover. The tooltip pairs the API name back with its callback, so a
                 // student who only sees the callback on the box can still see what scheduled it.

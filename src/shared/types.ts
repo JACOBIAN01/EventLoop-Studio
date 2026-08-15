@@ -1,6 +1,6 @@
 /**
  * Shared contract between the extension host (recorder) and the Webview UI.
- * Imported by both sides — kept dependency-free (no vscode, no React) so either
+ * Imported by both sides, kept dependency-free (no vscode, no React) so either
  * bundle can pull it in without pulling in the other's runtime.
  */
 
