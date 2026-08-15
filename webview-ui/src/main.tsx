@@ -17,6 +17,7 @@ const vscode = acquireVsCodeApi();
 function Root() {
   const [trace, setTrace] = useState<Trace | null>(null);
   const [hostError, setHostError] = useState<string | null>(null);
+  const [staleWarning, setStaleWarning] = useState<string | null>(null);
 
   useEffect(() => {
     function handleMessage(event: MessageEvent<HostToWebviewMessage>) {
@@ -24,9 +25,13 @@ function Root() {
       if (!message) return;
       if (message.type === 'trace') {
         setHostError(null);
+        setStaleWarning(null);
         setTrace(message.payload);
       } else if (message.type === 'error') {
         setHostError(message.message);
+      } else if (message.type === 'staleSource') {
+        // Deliberately doesn't touch `trace` — see the message type's own doc comment.
+        setStaleWarning(message.message);
       }
     }
 
@@ -36,7 +41,7 @@ function Root() {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  return <App trace={trace} hostError={hostError} vscodeApi={vscode} />;
+  return <App trace={trace} hostError={hostError} staleWarning={staleWarning} vscodeApi={vscode} />;
 }
 
 const container = document.getElementById('root');

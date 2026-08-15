@@ -13,6 +13,7 @@ import { ConsolePanel } from './components/ConsolePanel';
 import { Controls } from './components/Controls';
 import { Panel } from './components/Panel';
 import { CaptionBar } from './components/CaptionBar';
+import { InfoDot } from './components/InfoDot';
 import { VSep, HSep } from './components/Separators';
 import { Group, Panel as ResizablePanel } from 'react-resizable-panels';
 import { usePanelSizes } from './state/usePanelSizes';
@@ -321,11 +322,13 @@ export function computeStateAtStep(steps: ExecutionStep[], index: number): Deriv
 export interface AppProps {
   trace: Trace | null;
   hostError?: string | null;
+  /** Set when the last auto-save re-record failed to parse; the trace on screen is still the previous working one, not this failed save. */
+  staleWarning?: string | null;
   /** Omitted in contexts with no persistence available (e.g. a bare browser preview). */
   vscodeApi?: WebviewStateApi;
 }
 
-export function App({ trace, hostError, vscodeApi }: AppProps) {
+export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
   const steps = trace?.steps ?? [];
   const playback = usePlayback(steps.length);
 
@@ -392,6 +395,13 @@ export function App({ trace, hostError, vscodeApi }: AppProps) {
           <span className="text-[13px] font-semibold tracking-tight text-heading">EventLoop Studio</span>
           <span className="h-3.5 w-px flex-none bg-slate-200" aria-hidden="true" />
           <span className="truncate font-mono text-xs text-slate-500">{trace.fileName}</span>
+          {staleWarning && (
+            <InfoDot
+              variant="warning"
+              label="Showing the last working version"
+              text={`The last save didn't parse, so this is still showing the previous working version, not that save.\n\n${staleWarning}`}
+            />
+          )}
 
           <div className="ml-auto flex flex-none items-center gap-0.5 rounded-md border border-slate-200 bg-slate-50 p-0.5 text-[11px] font-semibold">
             <button
