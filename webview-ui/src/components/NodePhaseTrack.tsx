@@ -136,11 +136,14 @@ function LongConnector({
   col,
   row,
   rotation,
+  showArrowhead = true,
 }: {
   orientation: 'vertical' | 'horizontal';
   col: string;
   row: string;
   rotation: number;
+  /** false for a mid-path segment that only needs to join up with the next segment, not mark arrival at a phase. */
+  showArrowhead?: boolean;
 }) {
   const isVertical = orientation === 'vertical';
   return (
@@ -149,9 +152,9 @@ function LongConnector({
       style={{ gridColumn: col, gridRow: row }}
       aria-hidden="true"
     >
-      {rotation === 180 && <ArrowIcon rotation={rotation} />}
+      {showArrowhead && rotation === 180 && <ArrowIcon rotation={rotation} />}
       <div className={isVertical ? 'w-px flex-1 bg-slate-300' : 'h-px flex-1 bg-slate-300'} />
-      {rotation !== 180 && <ArrowIcon rotation={rotation} />}
+      {showArrowhead && rotation !== 180 && <ArrowIcon rotation={rotation} />}
     </div>
   );
 }
@@ -278,10 +281,14 @@ export function NodePhaseTrack({
           gridTemplateRows: 'minmax(0,1.3fr) minmax(0,0.15fr) minmax(0,2.6fr) minmax(0,0.15fr) minmax(0,1.3fr)',
         }}
       >
-        {/* Close Callbacks -> Timers: 3 small arrows, not one long line, per the final design */}
-        <Arrow rotation={0} col={1} row={1} />
-        <Arrow rotation={270} col={1} row={3} />
-        <Arrow rotation={180} col={3} row={5} />
+        {/* Close Callbacks -> Timers: one continuous line around the left edge, same as the
+            Poll->Check and Check->Close Callbacks connectors, instead of 3 disconnected
+            arrowheads. Only the final segment carries an arrowhead, marking arrival at Timers;
+            the other two are pass-through joins, matching how the other long connectors only
+            mark the phase they're arriving at, not every bend along the way. */}
+        <LongConnector orientation="horizontal" col="1 / 6" row="5" rotation={0} showArrowhead={false} />
+        <LongConnector orientation="vertical" col="1" row="2 / 5" rotation={0} showArrowhead={false} />
+        <LongConnector orientation="horizontal" col="1 / 2" row="1" rotation={0} />
 
         {PHASES.map((def) => {
           const isIdlePrepareChip = def.phase === 'idle-prepare';
