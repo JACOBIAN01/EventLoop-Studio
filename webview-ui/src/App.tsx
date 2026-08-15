@@ -495,7 +495,26 @@ export function App({ trace, hostError, staleWarning, vscodeApi }: AppProps) {
               className="h-full"
             >
               <ResizablePanel id="source" minSize={15}>
-                <Panel title="Source" accent="slate" bodyClassName="overflow-hidden" className="h-full">
+                <Panel
+                  title="Source"
+                  accent="slate"
+                  bodyClassName="overflow-hidden"
+                  className="h-full"
+                  badge={
+                    // Auto-refresh only fires on save (see reRecordOnSave in extension.ts) — this
+                    // is the on-demand escape hatch for "I haven't saved yet, show me anyway."
+                    // Reuses the exact same requestTrace message the mode toggle already sends,
+                    // just with the mode unchanged, so it needs no new host-side plumbing.
+                    <button
+                      type="button"
+                      onClick={() => setMode(activeMode)}
+                      title="Re-run this file with its current, possibly-unsaved edits"
+                      className="rounded-md border border-slate-200 bg-surface px-2 py-0.5 text-[10.5px] font-semibold text-slate-600 transition-colors hover:bg-slate-50"
+                    >
+                      Update
+                    </button>
+                  }
+                >
                   <SourceCode sourceCode={trace.sourceCode} currentLine={derived.currentLine} />
                 </Panel>
               </ResizablePanel>
